@@ -13,7 +13,7 @@ from tinymce_4.fields import TinyMCEModelField
 from error_codes import UNISENDER_COMMON_ERRORS
 from unisender.managers import (
     UnisenderTagManager, UnisenderFieldManager, UnisenderListManager,
-    UnisenderCampaignManager)
+    UnisenderCampaignManager, UnisenderManager)
 
 
 class UnisenderModel(models.Model):
@@ -27,6 +27,7 @@ class UnisenderModel(models.Model):
     error_dict = UNISENDER_COMMON_ERRORS
 
     objects = models.Manager()
+    unisender = UnisenderManager()
 
     def get_last_error(self):
         if self.last_error:
@@ -78,19 +79,43 @@ class Field(UnisenderModel):
         '''
         http://www.unisender.com/ru/help/api/createField/
         '''
-        pass
+        responce = self.api.createField(
+            params={'name': self.name, 'type': self.field_type,
+                    'is_visible ': self.visible, 'view_pos': self.sort,})
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if result:
+            return result['id']
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
 
     def _update_field(self):
         '''
         http://www.unisender.com/ru/help/api/updateField/
         '''
-        pass
+        self.api.updateField(
+            params={'id': self.unisender_id, 'name': self.name,
+                    'type': self.field_type, 'is_visible ': self.visible,
+                    'view_pos': self.sort,})
 
     def _delete_field(self):
         '''
         http://www.unisender.com/ru/help/api/deleteField/
         '''
-        pass
+        responce = self.api.deleteField(params={'id': self.unisender_id})
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
 
     def __unicode__(self):
         return unicode(self.name)
@@ -129,23 +154,57 @@ class SubscribeList(UnisenderModel):
         '''
         http://www.unisender.com/ru/help/api/deleteList/
         '''
-        pass
+        responce = self.api.deleteList(params={'id': self.unisender_id})
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
 
     def update_list(self):
         '''
         http://www.unisender.com/ru/help/api/updateList/
         '''
-        pass
+        responce = self.api.createList(
+            params={'createList': self.name, 'list_id': self.unisender_id,
+                    'before_subscribe_url ': self.before_subscribe_url,
+                    'after_subscribe_url': self.after_subscribe_url,})
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if result:
+            return result['id']
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
+
 
     def create_list(self):
         '''
         создает список
         http://www.unisender.com/ru/help/api/createList/
         '''
-        # result = self.api.createList(
-        #     title=self.model.title,
-        #     before_subscribe_url=self.model.before_subscribe_url,
-        #     after_subscribe_url=self.model.after_subscribe_url)
+        responce = self.api.createList(
+            params={'createList': self.name,
+                    'before_subscribe_url ': self.before_subscribe_url,
+                    'after_subscribe_url': self.after_subscribe_url,})
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if result:
+            return result['id']
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
 
     def __unicode__(self):
         return unicode(self.title)
@@ -200,26 +259,78 @@ class Subscriber(UnisenderModel):
     def serialize_fields(self):
         pass
 
+    def serialize_fields_id(self):
+        pass
+
+    def serialize_tags(self):
+        pass
+
+
     def subscribe(self):
         '''
         добавить подписчика
         http://www.unisender.com/ru/help/api/subscribe/
         '''
-        pass
+        responce = self.api.subscribe(
+            params={'list_ids': self.serialize_fields_id(),
+                    'fields': self.serialize_fields(),
+                    'tags': self.serialize_tags(),
+                    'double_optin  ': self.double_optin })
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if result:
+            return result['id']
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
 
     def unsubscribe(self, list_ids):
         '''
         убрать подписчика
         http://www.unisender.com/ru/help/api/unsubscribe/
         '''
-        pass
+        responce = self.api.unsubscribe(
+            params={'list_ids': self.serialize_fields_id(),
+                    'contact_type': self.contact_type,
+                    'contact': self.contact,
+                    'double_optin  ': self.double_optin })
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if result:
+            return result['id']
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
 
     def exclude(self, list_ids):
         '''
         убрать подписчика
         http://www.unisender.com/ru/help/api/exclude/
         '''
-        pass
+        responce = self.api.exclude(
+            params={'list_ids': self.serialize_fields_id(),
+                    'contact_type': self.contact_type,
+                    'contact': self.contact,
+                    'double_optin  ': self.double_optin })
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if result:
+            return result['id']
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
 
     def __unicode__(self):
         return unicode(self.contact)
@@ -248,7 +359,15 @@ class MessageModel(UnisenderModel):
         удалить сообщение
         http://www.unisender.com/ru/help/api/deleteMessage/
         '''
-        pass
+        responce = self.api.deleteMessage(params={'id': self.unisender_id})
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
 
     class Meta:
         abstract = True
@@ -508,7 +627,7 @@ class CampaignStatus(UnisenderModel):
     def get_success_count(self):
         result = 0
         err_fields = ['ok_delivered', 'ok_read',
-                      'ok_spam_folder', 'ok_link_visited', 'ok_unsubscribed',]
+                      'ok_spam_folder', 'ok_link_visited', 'ok_unsubscribed', ]
         for item in err_fields:
             result += getattr(self, item, 0)
         return result
