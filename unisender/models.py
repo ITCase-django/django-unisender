@@ -22,7 +22,7 @@ class UnisenderModel(models.Model):
     last_error = models.CharField(_(u'последняя ошибка'), max_length=255,
                                   blank=True, null=True)
     sync = models.BooleanField(
-        _(u'Синхронизированно с Unisender?'), default=True)
+        _(u'Синхронизированно с Unisender?'), default=False)
 
     error_dict = UNISENDER_COMMON_ERRORS
 
@@ -163,9 +163,9 @@ class Subscriber(UnisenderModel):
     ]
     list_ids = models.ManyToManyField(
         SubscribeList, related_name='subscribers',
-        verbose_name=_(u'Списки рассылки'))
+        verbose_name=_(u'Списки рассылки'), blank=True, null=True)
     tags = models.ManyToManyField(Tag, related_name='subscribers',
-                                  verbose_name=u'Метки')
+                                  verbose_name=u'Метки', blank=True, null=True)
     contact_type = models.CharField(_(u'Тип контакта'), max_length=50,
                                     choices=CONTACT_TYPE,
                                     default=CONTACT_TYPE[0][0])
@@ -222,7 +222,7 @@ class Subscriber(UnisenderModel):
         pass
 
     def __unicode__(self):
-        return unicode(self.title)
+        return unicode(self.contact)
 
     class Meta:
         ordering = ('contact',)
@@ -262,8 +262,8 @@ class EmailMessage(MessageModel):
         ('it', _(u'иткальянский')),
     ]
     TEXT_GENERATE = [
-        (0, _(u'Нет')),
-        (1, _(u'Да')),
+        ('0', _(u'Нет')),
+        ('1', _(u'Да')),
     ]
     WRAP_TYPE = [
         ('skip', _(u'не применять')),
@@ -329,8 +329,8 @@ class SmsMessage(MessageModel):
 
 class Campaign(UnisenderModel):
     TEXT_GENERATE = [
-        (0, _(u'Нет')),
-        (1, _(u'Да')),
+        ('0', _(u'Нет')),
+        ('1', _(u'Да')),
     ]
 
     name = models.CharField(_(u'Название рассылки'), max_length=255)
@@ -343,18 +343,18 @@ class Campaign(UnisenderModel):
         max_length=50,  choices=TEXT_GENERATE, default=TEXT_GENERATE[0][0])
     track_links = models.CharField(
         _(u'отслеживать ли  переходы по ссылкам в e-mail сообщении'),
-            max_length=50,
+        max_length=50,
         choices=TEXT_GENERATE,
         default=TEXT_GENERATE[0][0])
-    contacts = models.CharField(
-        _(u'email-адреса (или телефоны для sms-сообщений)'),
+    contacts = models.ManyToManyField(
+        Subscriber, related_name='campaign', verbose_name=u'Контакты',
         help_text='''Если этот аргумент отсутствует, то отправка будет
                      осуществлена по всем контактам списка, для которого
                      составлено сообщение (возможно, с учётом сегментации
                      по меткам). Если аргумент contacts присутствует,
                      то во внимание будут приняты только те контакты, которые
                      входят в список, а остальные будут проигнорированы. ''',
-        blank=True, null=True, max_length=255)
+        blank=True, null=True)
     track_ga = models.CharField(
         _(u'включить интеграцию с Google Analytics/Яндекс.Метрика. '),
         max_length=50, choices=TEXT_GENERATE, default=TEXT_GENERATE[0][0])
@@ -431,7 +431,8 @@ class CampaignStatus(UnisenderModel):
         _(u'Письмо отклонено сервером как спам'), default=0)
     err_spam_folder = models.PositiveSmallIntegerField(
         _(u'Письмо помещено в папку со спамом почтовой службой'),
-        help_text=_(u'К сожалению, редкие почтовые службы сообщают такую информацию, поэтому таких статусов обычно немного'),
+        help_text=_(
+            u'К сожалению, редкие почтовые службы сообщают такую информацию, поэтому таких статусов обычно немного'),
         default=0)
     err_delivery_failed = models.PositiveSmallIntegerField(
         _(u'Доставка не удалась по иным причинам'), default=0)
@@ -452,27 +453,33 @@ class CampaignStatus(UnisenderModel):
         default=0)
     err_spam_retry = models.PositiveSmallIntegerField(
         _(u'письмо ранее не было отправлено из-за подозрения на спам'),
-        help_text=_(u'после расследования выяснилось, что всё в порядке и его нужно переотправить'),
+        help_text=_(
+            u'после расследования выяснилось, что всё в порядке и его нужно переотправить'),
         default=0)
     err_unsubscribed = models.PositiveSmallIntegerField(
         _(u'отправка не выполнялась, т.к. адрес, по которому пытались отправить письмо, ранее отписался'),
-        help_text=_(u'Выделяется по сравнению с err_skip_letter в отдельный случай, чтобы позволить пользователю API пометить этот адрес как отписавшийся и в своей базе данных и больше не отправлять на него'),
+        help_text=_(
+            u'Выделяется по сравнению с err_skip_letter в отдельный случай, чтобы позволить пользователю API пометить этот адрес как отписавшийся и в своей базе данных и больше не отправлять на него'),
         default=0)
     err_src_invalid = models.PositiveSmallIntegerField(
         _(u'неправильный адрес отправителя'),
-        help_text=_(u'Используется, если "невалидность email-а отправителя" обнаружилась не на стадии приёма задания и проверки параметров, а на более поздней стадии, когда осуществляется детальная проверка того, что нужно отправить'),
+        help_text=_(
+            u'Используется, если "невалидность email-а отправителя" обнаружилась не на стадии приёма задания и проверки параметров, а на более поздней стадии, когда осуществляется детальная проверка того, что нужно отправить'),
         default=0)
     err_dest_invalid = models.PositiveSmallIntegerField(
         _(u'неправильный адрес получателя'),
-        help_text=_(u'Используется, если "невалидность email-а получателя" обнаружилась не на стадии приёма задания и проверки параметров, а на более поздней стадии, когда осуществляется подробная проверка того, что нужно отправить'),
+        help_text=_(
+            u'Используется, если "невалидность email-а получателя" обнаружилась не на стадии приёма задания и проверки параметров, а на более поздней стадии, когда осуществляется подробная проверка того, что нужно отправить'),
         default=0)
     err_not_allowed = models.PositiveSmallIntegerField(_
-        (u'возможность отправки писем заблокирована'),
-        help_text=_(u'системой из-за нехватки средств на счету или сотрудниками технической поддержки вручную'),
-        default=0)
+                                                      (u'возможность отправки писем заблокирована'),
+                                                       help_text=_(
+                                                       u'системой из-за нехватки средств на счету или сотрудниками технической поддержки вручную'),
+                                                       default=0)
     err_not_available = models.PositiveSmallIntegerField(
         _(u'адрес, по которому пытались отправить письмо, не является доступным'),
-        help_text=_(u'(т.е. ранее отправки на него приводили к сообщениям а-ля "адрес не существует" или "блокировка по спаму") Доступность адреса теоретически может быть восстановлена через несколько дней или недель, поэтому можно его не вычёркивать полностью из списка потенциальных адресатов'),
+        help_text=_(
+            u'(т.е. ранее отправки на него приводили к сообщениям а-ля "адрес не существует" или "блокировка по спаму") Доступность адреса теоретически может быть восстановлена через несколько дней или недель, поэтому можно его не вычёркивать полностью из списка потенциальных адресатов'),
         default=0)
     err_lost = models.PositiveSmallIntegerField(
         _(u'письмо было утеряно из-за сбоя на нашей стороне, и отправитель должен переотправить письмо самостоятельно, т.к. оригинал не сохранился'),
@@ -480,6 +487,33 @@ class CampaignStatus(UnisenderModel):
     err_internal = models.PositiveSmallIntegerField(
         _(u'внутренний сбой, при котором переотправка письма отправителем не должна осуществляться'),
         default=0)
+
+    def get_error_count(self):
+        result = 0
+        err_fields = ['err_user_unknown', 'err_user_inactive',
+                      'err_mailbox_full', 'err_spam_rejected',
+                      'err_spam_folder', 'err_delivery_failed',
+                      'err_will_retry', 'err_resend',
+                      'err_domain_inactive', 'err_skip_letter',
+                      'err_spam_skipped', 'err_spam_retry',
+                      'err_unsubscribed', 'err_src_invalid',
+                      'err_dest_invalid', 'err_not_allowed',
+                      'err_not_available', 'err_lost', 'err_internal', ]
+        for item in err_fields:
+            result += getattr(self, item, 0)
+        return result
+
+    get_error_count.short_description = u'Общее количество ошибок'
+
+    def get_success_count(self):
+        result = 0
+        err_fields = ['ok_delivered', 'ok_read',
+                      'ok_spam_folder', 'ok_link_visited', 'ok_unsubscribed',]
+        for item in err_fields:
+            result += getattr(self, item, 0)
+        return result
+
+    get_success_count.short_description = u'Общее количество успешнодоставленных сообщений'
 
     def get_campaign_status(self):
         '''
