@@ -21,7 +21,8 @@ setup(
     install_requires=[
         'pyunisend',
         'django>=1.4, <1.7',
-        'git+git://github.com/ITCase/django-tinymce-4'
+        'git+git://github.com/ITCase/django-tinymce-4',
+        'mock'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',

@@ -221,7 +221,7 @@ class Subscriber(UnisenderModel):
         return unicode(self.title)
 
     class Meta:
-        ordering = ('title',)
+        ordering = ('contact',)
         verbose_name = _(u'Подписчик')
         verbose_name_plural = _(u'Подписчики')
 
@@ -350,7 +350,7 @@ class Campaign(UnisenderModel):
                      по меткам). Если аргумент contacts присутствует,
                      то во внимание будут приняты только те контакты, которые
                      входят в список, а остальные будут проигнорированы. ''',
-        blank=True, null=True)
+        blank=True, null=True, max_length=255)
     track_ga = models.CharField(
         _(u'включить интеграцию с Google Analytics/Яндекс.Метрика. '),
         max_length=50, choices=TEXT_GENERATE, default=TEXT_GENERATE[0][0])
@@ -384,13 +384,13 @@ class CampaignStatus(UnisenderModel):
         ('waits_censor', u'рассылка ожидает проверки администратором.'),
         ('waits_schedule',
          u'задача на отправку рассылки запомнена системой и будет обработана'),
-        ('declined', u'рассылка отклонена администратором')
-        ('in_progress', u'рассылка выполняется')
-        ('analysed', u'все сообщения отправлены, идёт анализ результатов')
-        ('completed', u'все сообщения отправлены и анализ результатов закончен')
-        ('stopped', u'рассылка поставлена "на паузу"')
+        ('declined', u'рассылка отклонена администратором'),
+        ('in_progress', u'рассылка выполняется'),
+        ('analysed', u'все сообщения отправлены, идёт анализ результатов'),
+        ('completed', u'все сообщения отправлены и анализ результатов закончен'),
+        ('stopped', u'рассылка поставлена "на паузу"'),
         ('canceled',
-         u'рассылка отменена (обычно из-за нехватки денег или по желанию пользователя)')
+         u'рассылка отменена (обычно из-за нехватки денег или по желанию пользователя)'),
     ]
     campaign = models.ForeignKey(EmailMessage, verbose_name=u'Рассылка')
     status = models.CharField(
@@ -499,7 +499,7 @@ class CampaignStatus(UnisenderModel):
         return unicode(self.campaign)
 
     class Meta:
-        ordering = ('name',)
+        ordering = ('campaign',)
         verbose_name = _(u'Статусы рассылки')
         verbose_name_plural = _(u'Статусы рассылки')
 
