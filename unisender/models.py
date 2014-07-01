@@ -12,8 +12,8 @@ from tinymce_4.fields import TinyMCEModelField
 # app imports
 from error_codes import UNISENDER_COMMON_ERRORS
 from unisender.managers import (
-    UnisenderTagManager, UnisenderFIeldManager, UnisenderListManager,
-    SubscriberListManager, CampaignManager)
+    UnisenderTagManager, UnisenderFieldManager, UnisenderListManager,
+    UnisenderCampaignManager)
 
 
 class UnisenderModel(models.Model):
@@ -25,6 +25,8 @@ class UnisenderModel(models.Model):
         _(u'Синхронизированно с Unisender?'), default=True)
 
     error_dict = UNISENDER_COMMON_ERRORS
+
+    objects = models.Manager()
 
     def get_last_error(self):
         if self.last_error:
@@ -49,7 +51,7 @@ class Tag(UnisenderModel):
         verbose_name_plural = _(u'Метки')
 
 
-class Fields(UnisenderModel):
+class Field(UnisenderModel):
     TYPE_CHOICES = [
         ('string', _(u'строка')),
         ('text', _(u'одна или несколько строк')),
@@ -70,7 +72,7 @@ class Fields(UnisenderModel):
             По умолчанию 1. При совпадении этого числа у разных полей порядок
             не гарантируется.'''))
 
-    unisender = UnisenderFIeldManager()
+    unisender = UnisenderFieldManager()
 
     def _create_field(self):
         '''
@@ -137,9 +139,13 @@ class SubscribeList(UnisenderModel):
 
     def create_list(self):
         '''
+        создает список
         http://www.unisender.com/ru/help/api/createList/
         '''
-        pass
+        # result = self.api.createList(
+        #     title=self.model.title,
+        #     before_subscribe_url=self.model.before_subscribe_url,
+        #     after_subscribe_url=self.model.after_subscribe_url)
 
     def __unicode__(self):
         return unicode(self.title)
@@ -191,8 +197,6 @@ class Subscriber(UnisenderModel):
                     уже есть, но в случае превышения лимита подписчик
                     добавляется со статусом «новый». ''', default=1)
 
-    unisender = SubscriberListManager()
-
     def serialize_fields(self):
         pass
 
@@ -229,7 +233,7 @@ class Subscriber(UnisenderModel):
 class SubscriberFields(models.Model):
     subscriber = models.ForeignKey(Subscriber, verbose_name=u'подписчик',
                                    related_name='fields')
-    field = models.ForeignKey(Fields, verbose_name=u'поле')
+    field = models.ForeignKey(Field, verbose_name=u'поле')
     value = models.CharField(_(u'Значение'), max_length=255)
 
     class Meta:
@@ -357,7 +361,7 @@ class Campaign(UnisenderModel):
     payment_limit = models.PositiveSmallIntegerField(
         _(u'ограничить бюджет рассылки'), blank=True, null=True)
 
-    unisender = CampaignManager()
+    unisender = UnisenderCampaignManager()
 
     def create_campaign(self):
         '''
