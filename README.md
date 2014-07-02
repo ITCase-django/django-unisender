@@ -3,5 +3,7 @@
 [![Stories in progress](https://badge.waffle.io/itcase/django-unisender.png?label=in progress&title=In Progress)](https://waffle.io/itcase/django-unisender)
 [![PyPI](http://img.shields.io/pypi/dm/django-unisender.svg)](https://pypi.python.org/pypi/django-unisender)
 
-djnago-unisender
+django-unisender
 ================
+
+work in progress
