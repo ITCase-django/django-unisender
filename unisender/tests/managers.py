@@ -36,10 +36,10 @@ class TagManagerTestCase(TestCase):
         self.manager.get_and_update_tags()
         tag_1 = Tag.objects.get(unisender_id=1)
         self.assertEquals(tag_1.name, 'test 1')
-        self.assertTrue(tag_1.sync)
+        self.assertFalse(tag_1.sync)
         tag_2 = Tag.objects.get(unisender_id=2)
         self.assertEquals(tag_2.name, 'test 2')
-        self.assertTrue(tag_2.sync)
+        self.assertFalse(tag_2.sync)
 
 
 class FieldManagerTestCase(TestCase):
@@ -78,13 +78,13 @@ class FieldManagerTestCase(TestCase):
         self.assertEquals(field_1.name, 'test 1')
         self.assertEquals(field_1.field_type, 'string')
         self.assertEquals(field_1.sort, 1)
-        self.assertTrue(field_1.sync)
+        self.assertFalse(field_1.sync)
         self.assertTrue(field_1.visible)
 
         field_2 = Field.objects.get(unisender_id=2)
         self.assertEquals(field_2.name, 'test 2')
         self.assertEquals(field_2.field_type, 'text')
-        self.assertTrue(field_2.sync)
+        self.assertFalse(field_2.sync)
         self.assertTrue(field_2.visible)
         self.assertEquals(field_2.sort, 3)
 
@@ -119,10 +119,10 @@ class ListManagerTestCase(TestCase):
         self.manager.get_and_update_lists()
         list_1 = SubscribeList.objects.get(unisender_id=1)
         self.assertEquals(list_1.title, 'test 1')
-        self.assertTrue(list_1.sync)
+        self.assertFalse(list_1.sync)
         list_2 = SubscribeList.objects.get(unisender_id=2)
         self.assertEquals(list_2.title, 'test 2')
-        self.assertTrue(list_2.sync)
+        self.assertFalse(list_2.sync)
 
 
 class CampaignManagerTestCase(TestCase):
@@ -158,4 +158,3 @@ class CampaignManagerTestCase(TestCase):
     def test__get_campaings_time_filter(self):
         # TODO
         pass
-

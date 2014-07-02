@@ -81,9 +81,9 @@ admin.site.register(Subscriber, SubscriberAdmin)
 class EmailMessageAdmin(UnisenderAdmin):
     fieldsets = unisender_fieldsets + [
         (u'Сообщение', {
-            'fields': ['sender_name', 'subject', 'body', 'list_id', 'tags',
+            'fields': ['sender_name', 'sender_email', 'subject', 'body', 'list_id', 'tags',
                        'lang', 'text_body', 'generate_text', 'wrap_type',
-                       'categories',]
+                       'categories', 'tag']
         }),
         (u'Автоматическая отправка', {
             'fields': ['series_day', 'series_time', ]

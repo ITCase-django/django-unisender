@@ -79,9 +79,9 @@ class Field(UnisenderModel):
         '''
         http://www.unisender.com/ru/help/api/createField/
         '''
-        responce = self.api.createField(
+        responce = self.unisender.api.createField(
             params={'name': self.name, 'type': self.field_type,
-                    'is_visible ': self.visible, 'view_pos': self.sort,})
+                    'is_visible ': self.visible, 'view_pos': self.sort, })
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
@@ -98,16 +98,17 @@ class Field(UnisenderModel):
         '''
         http://www.unisender.com/ru/help/api/updateField/
         '''
-        self.api.updateField(
+        self.unisender.api.updateField(
             params={'id': self.unisender_id, 'name': self.name,
                     'type': self.field_type, 'is_visible ': self.visible,
-                    'view_pos': self.sort,})
+                    'view_pos': self.sort, })
 
     def _delete_field(self):
         '''
         http://www.unisender.com/ru/help/api/deleteField/
         '''
-        responce = self.api.deleteField(params={'id': self.unisender_id})
+        responce = self.unisender.api.deleteField(
+            params={'id': self.unisender_id})
         error = responce.get('error')
         warning = responce.get('warning')
         if error:
@@ -154,7 +155,8 @@ class SubscribeList(UnisenderModel):
         '''
         http://www.unisender.com/ru/help/api/deleteList/
         '''
-        responce = self.api.deleteList(params={'id': self.unisender_id})
+        responce = self.unisender.api.deleteList(
+            params={'id': self.unisender_id})
         error = responce.get('error')
         warning = responce.get('warning')
         if error:
@@ -168,10 +170,10 @@ class SubscribeList(UnisenderModel):
         '''
         http://www.unisender.com/ru/help/api/updateList/
         '''
-        responce = self.api.createList(
+        responce = self.unisender.api.createList(
             params={'createList': self.name, 'list_id': self.unisender_id,
                     'before_subscribe_url ': self.before_subscribe_url,
-                    'after_subscribe_url': self.after_subscribe_url,})
+                    'after_subscribe_url': self.after_subscribe_url, })
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
@@ -184,16 +186,15 @@ class SubscribeList(UnisenderModel):
             # TODO last warnings
             pass
 
-
     def create_list(self):
         '''
         создает список
         http://www.unisender.com/ru/help/api/createList/
         '''
-        responce = self.api.createList(
+        responce = self.unisender.api.createList(
             params={'createList': self.name,
                     'before_subscribe_url ': self.before_subscribe_url,
-                    'after_subscribe_url': self.after_subscribe_url,})
+                    'after_subscribe_url': self.after_subscribe_url, })
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
@@ -265,17 +266,16 @@ class Subscriber(UnisenderModel):
     def serialize_tags(self):
         pass
 
-
     def subscribe(self):
         '''
         добавить подписчика
         http://www.unisender.com/ru/help/api/subscribe/
         '''
-        responce = self.api.subscribe(
+        responce = self.unisender.api.subscribe(
             params={'list_ids': self.serialize_fields_id(),
                     'fields': self.serialize_fields(),
                     'tags': self.serialize_tags(),
-                    'double_optin  ': self.double_optin })
+                    'double_optin  ': self.double_optin})
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
@@ -293,11 +293,11 @@ class Subscriber(UnisenderModel):
         убрать подписчика
         http://www.unisender.com/ru/help/api/unsubscribe/
         '''
-        responce = self.api.unsubscribe(
+        responce = self.unisender.api.unsubscribe(
             params={'list_ids': self.serialize_fields_id(),
                     'contact_type': self.contact_type,
                     'contact': self.contact,
-                    'double_optin  ': self.double_optin })
+                    'double_optin  ': self.double_optin})
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
@@ -315,11 +315,11 @@ class Subscriber(UnisenderModel):
         убрать подписчика
         http://www.unisender.com/ru/help/api/exclude/
         '''
-        responce = self.api.exclude(
+        responce = self.unisender.api.exclude(
             params={'list_ids': self.serialize_fields_id(),
                     'contact_type': self.contact_type,
                     'contact': self.contact,
-                    'double_optin  ': self.double_optin })
+                    'double_optin  ': self.double_optin})
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
@@ -359,7 +359,8 @@ class MessageModel(UnisenderModel):
         удалить сообщение
         http://www.unisender.com/ru/help/api/deleteMessage/
         '''
-        responce = self.api.deleteMessage(params={'id': self.unisender_id})
+        responce = self.unisender.api.deleteMessage(
+            params={'id': self.unisender_id})
         error = responce.get('error')
         warning = responce.get('warning')
         if error:
@@ -391,12 +392,13 @@ class EmailMessage(MessageModel):
         ('center', _(u'выравнивание по центру')),
     ]
     sender_name = models.CharField(_(u'Имя отправителя'), max_length=255)
+    sender_email = models.CharField(
+        _(u'E-mail адрес отправителя'), max_length=255)
     subject = models.CharField(_(u'Тема'), max_length=255)
     body = TinyMCEModelField(_(u'Текст письма в формате HTML'))
     list_id = models.ForeignKey(SubscribeList, verbose_name=u'Список рассылки',
                                 related_name='emails')
-    tags = models.ManyToManyField(Tag, related_name='emails',
-                                  verbose_name=u'Метки')
+    tag = models.ForeignKey(Tag, related_name='emails', verbose_name=u'Метка')
     lang = models.CharField(_(u'Язык'), max_length=50,
                             choices=LANGUAGES,
                             default=LANGUAGES[0][0])
@@ -409,7 +411,7 @@ class EmailMessage(MessageModel):
     wrap_type = models.CharField(_(u'Выравнивание текста сообщения'),
                                  max_length=50,
                                  choices=TEXT_GENERATE,
-                                 default=TEXT_GENERATE[1][0])
+                                 default=TEXT_GENERATE[0][0])
     categories = models.CharField(
         _(u'Категории письма'), max_length=255, blank=True, null=True)
     series_day = models.PositiveSmallIntegerField(
@@ -425,12 +427,44 @@ class EmailMessage(MessageModel):
         _(u'Время отправки для автоматически рассылаемого письма'),
         default=datetime.now())
 
+    def serialize_list(self):
+        return
+
     def create_email_message(self):
         '''
         создать сообщение электронной почты
         http://www.unisender.com/ru/help/api/createEmailMessage/
         '''
-        pass
+        params = {'sender_name': self.sender_name,
+                  'sender_email': self.sender_email,
+                  'subject': self.subject,
+                  'body': self.body,
+                  'list_id': self.serialize_list,
+                  'generate_text': self.generate_text,
+                  'tag': self.tag,
+                  'lang': self.lang,
+                  'wrap_type': self.wrap_type}
+        if self.text_body:
+            params['text_body'] = self.text_body
+        if self.series_day:
+            params['series_day'] = self.series_day
+        if self.series_time:
+            params['series_time'] = self.series_time
+        if self.categories:
+            params['categories'] = self.categories
+        responce = self.unisender.api.createEmailMessage(
+            params=params)
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if result:
+            return result['id']
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
 
     def __unicode__(self):
         return unicode(self.subject)
@@ -456,7 +490,6 @@ class Campaign(UnisenderModel):
     email_message = models.ForeignKey(EmailMessage, verbose_name=u'Сообщение')
     start_time = models.DateTimeField(
         _(u'Дата и время запуска рассылки'), blank=True, null=True)
-    timezone = models.CharField(_(u'часовой пояс'), max_length=255)
     track_read = models.CharField(
         _(u'отслеживать ли факт прочтения e-mail сообщения'),
         max_length=50,  choices=TEXT_GENERATE, default=TEXT_GENERATE[0][0])
@@ -482,11 +515,40 @@ class Campaign(UnisenderModel):
 
     unisender = UnisenderCampaignManager()
 
+    def serrialize_contacts(self):
+        return
+
+
     def create_campaign(self):
         '''
         http://www.unisender.com/ru/help/api/createCampaign/
         '''
-        pass
+        params = {'message_id ': self.email_message.unisender_id,
+                  'subject': self.subject,
+                  'track_read': self.track_read,
+                  'track_links ': self.track_links ,
+                  'contacts': self.serrialize_contacts(),
+                  'defer': 1,
+                  'track_ga ': self.track_ga,
+                  'wrap_type': self.wrap_type}
+        if self.start_time:
+            params['start_time'] = self.start_time
+        if self.payment_limit:
+            params['payment_limit'] = self.payment_limit
+
+        responce = self.unisender.api.createCampaign(
+            params=params)
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if result:
+            return result
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
 
     def __unicode__(self):
         return unicode(self.name)
