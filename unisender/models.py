@@ -365,7 +365,6 @@ class Subscriber(UnisenderModel):
         responce = api.exclude(
             contact=self.contact,
             list_ids=self.serialize_list_id(), contact_type=self.contact_type)
-        print '\naa %s\n' % responce
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
