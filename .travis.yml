@@ -13,4 +13,4 @@ install:
   - pip install git+git://github.com/ITCase/django-tinymce-4 
 
 script:
-  runtest.py 
+  python runtest.py 
