@@ -564,13 +564,11 @@ class Campaign(UnisenderModel):
         http://www.unisender.com/ru/help/api/createCampaign/
         '''
         params = {'message_id ': self.email_message.unisender_id,
-                  'subject': self.subject,
                   'track_read': self.track_read,
                   'track_links ': self.track_links ,
                   'contacts': self.serrialize_contacts(),
                   'defer': 1,
-                  'track_ga ': self.track_ga,
-                  'wrap_type': self.wrap_type}
+                  'track_ga ': self.track_ga}
         if self.start_time:
             params['start_time'] = self.start_time
         if self.payment_limit:

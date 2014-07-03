@@ -190,7 +190,8 @@ class CampaignTestCase(TestCase):
         message = EmailMessage.objects.create(
             sender_name='test', sender_email='mail@example.com', subject='test',
             body='test', list_id=subscriber_list)
-        self.campaign = Campaign.objects.create(name='test', email_message=message)
+        self.campaign = Campaign.objects.create(
+            name='test', email_message=message)
         self.campaign.contacts.add(subscriber)
 
     def test__serrialize_contacts(self):
@@ -202,9 +203,11 @@ class CampaignTestCase(TestCase):
             'mail@example.com,mail_2@example.com',
             self.campaign.serrialize_contacts())
 
-    @patch.object(EmailMessage, 'get_api', unisender_test_api)
+    @patch.object(Campaign, 'get_api', unisender_test_api)
     def test__create_campaign(self):
-        pass
+        self.assertDictEqual(
+            self.campaign.create_campaign(),
+            {'campaign_id': 1, 'status': 'scheduled', 'count': 2})
 
 
 class CampaignStatusTestCase(TestCase):
