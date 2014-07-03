@@ -188,8 +188,7 @@ class SubscribeList(UnisenderModel):
         http://www.unisender.com/ru/help/api/deleteList/
         '''
         api = self.get_api()
-        responce = api.deleteList(
-            params={'id': self.unisender_id})
+        responce = api.deleteList(list_id=self.unisender_id)
         error = responce.get('error')
         warning = responce.get('warning')
         if error:
@@ -205,17 +204,16 @@ class SubscribeList(UnisenderModel):
         '''
         api = self.get_api()
         responce = api.updateList(
-            params={'createList': self.title, 'list_id': self.unisender_id,
-                    'before_subscribe_url ': self.before_subscribe_url,
-                    'after_subscribe_url': self.after_subscribe_url, })
+            title=self.title, list_id=self.unisender_id,
+            before_subscribe_url=self.before_subscribe_url,
+            after_subscribe_url=self.after_subscribe_url)
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
         if result:
             return result['id']
         if error:
-            # TODO last errors
-            pass
+            self.last_error = error
         if warning:
             # TODO last warnings
             pass
@@ -227,17 +225,18 @@ class SubscribeList(UnisenderModel):
         '''
         api = self.get_api()
         responce = api.createList(
-            params={'createList': self.title,
-                    'before_subscribe_url ': self.before_subscribe_url,
-                    'after_subscribe_url': self.after_subscribe_url, })
+            title=self.title,
+            before_subscribe_url=self.before_subscribe_url,
+            after_subscribe_url=self.after_subscribe_url)
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
         if result:
+            self.sync = True
+            self.last_error = None
             return result['id']
         if error:
-            # TODO last errors
-            pass
+            self.last_error = error
         if warning:
             # TODO last warnings
             pass
