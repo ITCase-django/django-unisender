@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # python imports
-import collections
 from datetime import datetime
 
 # django imports
@@ -292,7 +291,7 @@ class Subscriber(UnisenderModel):
                     добавляется со статусом «новый». ''', default=1)
 
     def serialize_fields(self):
-        result = collections.OrderedDict()
+        result = {}
         if self.contact_type == 'email':
             result['email'] = self.contact
         else:
@@ -342,7 +341,7 @@ class Subscriber(UnisenderModel):
         '''
         api = self.get_api()
         responce = api.unsubscribe(
-            list_ids=self.serialize_fields_id(),
+            list_ids=self.serialize_list_id(),
             contact_type=self.contact_type, contact=self.contact,
             double_optin=self.double_optin)
         result = responce.get('result')

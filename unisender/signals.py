@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+    # -*- coding: utf-8 -*-
 
 from django.db.models.signals import pre_save, pre_delete, post_save, m2m_changed
 from django.dispatch import receiver
@@ -23,8 +23,8 @@ def sync_field_on_delete(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=SubscribeList)
 def sync_subscribe_list_on_save(sender, instance, **kwargs):
-    if instance.pk:
-        if instance.unisender_id:
+    if instance.unisender_id:
+        if instance.pk:
             instance.update_list()
         else:
             instance.unisender_id = instance.create_list()

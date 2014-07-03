@@ -15,40 +15,40 @@ from unisender.error_codes import UNISENDER_COMMON_ERRORS
 def unisender_test_api(UnisenderModel):
     class UnisenderMockAPI(object):
 
-        def createField(self, params={}):
+        def createField(self, **kwargs):
             return {'result': {'id': 1}}
 
-        def updateField(self, params={}):
+        def updateField(self, **kwargs):
             return {'id': 1}
 
-        def deleteField(self, params={}):
+        def deleteField(self, **kwargs):
             return {'result': {}}
 
-        def deleteList(self, params={}):
+        def deleteList(self, **kwargs):
             return {'result': {}}
 
-        def updateList(self, params={}):
+        def updateList(self, **kwargs):
             return {'result': {}}
 
-        def createList(self, params={}):
+        def createList(self, **kwargs):
             return {'result': {'id': 1}}
 
-        def subscribe(self, params={}):
+        def subscribe(self, **kwargs):
             return {'result': {'person_id': 1}}
 
-        def unsubscribe(self, params={}):
+        def unsubscribe(self, **kwargs):
             return {'result': {}}
 
-        def exclude(self, params={}):
+        def exclude(self, **kwargs):
             return {'result': {}}
 
-        def deleteMessage(self, params={}):
+        def deleteMessage(self, **kwargs):
             return {'result': {}}
 
-        def createEmailMessage(self, params={}):
+        def createEmailMessage(self, **kwargs):
             return {'result': {'message_id': 1}}
 
-        def createCampaign(self, params={}):
+        def createCampaign(self, **kwargs):
             return {'result': {'campaign_id': 1, 'status': 'scheduled',
                                'count': 2}}
     return UnisenderMockAPI()
@@ -59,6 +59,7 @@ class FieldModelTestCase(TestCase):
     def setUp(self):
         self.field = Field.objects.create(name='test')
 
+    @patch.object(Field, 'get_api', unisender_test_api)
     def test__get_last_error(self):
         field = Field.objects.create(name='test')
         self.assertIsNone(field.get_last_error())
@@ -68,7 +69,7 @@ class FieldModelTestCase(TestCase):
             UNISENDER_COMMON_ERRORS['invalid_arg'], field.get_last_error())
         field.last_error = 'test'
         field.save()
-        self.assertEquals(field.default_error_message, field.get_last_error())
+        self.assertEquals('test', field.get_last_error())
 
     @patch.object(Field, 'get_api', unisender_test_api)
     def test__create_field(self):
@@ -109,36 +110,38 @@ class SubscriberTestCase(TestCase):
             contact='9123456789', contact_type='phone')
 
         self.assertEquals(
-            u'fields[email]=mail@example.com', subscriber.serialize_fields())
+            {'email': 'mail@example.com'}, subscriber.serialize_fields())
         self.assertEquals(
-            u'fields[phone]=9123456789', subscriber_2.serialize_fields())
+            {'phone': '9123456789'}, subscriber_2.serialize_fields())
 
         field_1 = Field.objects.create(name='test')
         SubscriberFields.objects.create(
             subscriber=subscriber, field=field_1, value='test_value')
-        self.assertEquals(
-            u'fields[email]=mail@example.com&fields[test]=test_value',
+        self.assertDictEqual(
+            {u'test': u'test_value', 'email': 'mail@example.com'},
             subscriber.serialize_fields())
         field_2 = Field.objects.create(name='test_2')
         SubscriberFields.objects.create(
             subscriber=subscriber_2, field=field_1, value='test_value')
         SubscriberFields.objects.create(
             subscriber=subscriber_2, field=field_2, value='test_value_2')
-        self.assertEquals(
-            u'fields[phone]=9123456789&fields[test]=test_value&fields[test_2]=test_value_2',
+        self.assertDictEqual(
+            {u'test': u'test_value', 'phone': '9123456789', u'test_2': u'test_value_2'},
             subscriber_2.serialize_fields())
 
-    def test__serialize_fields_id(self):
+    def test__serialize_list_id(self):
         subscriber = Subscriber.objects.create(contact='mail@example.com')
-        subscriber_list_1 = SubscribeList.objects.create(title='test')
+        subscriber_list_1 = SubscribeList.objects.create(
+            title='test', unisender_id=1)
         subscriber.list_ids.add(subscriber_list_1)
         self.assertEquals(
-            str(subscriber_list_1.pk), subscriber.serialize_fields_id())
-        subscriber_list_2 = SubscribeList.objects.create(title='test_2')
+            str(subscriber_list_1.pk), subscriber.serialize_list_id())
+        subscriber_list_2 = SubscribeList.objects.create(
+            title='test_2', unisender_id=1)
         subscriber.list_ids.add(subscriber_list_2)
         self.assertEquals(
             '%s,%s' % (subscriber_list_1.pk,
-            subscriber_list_2.pk), subscriber.serialize_fields_id())
+            subscriber_list_2.pk), subscriber.serialize_list_id())
 
     def test__serialize_tags(self):
         subscriber = Subscriber.objects.create(contact='mail@example.com')
