@@ -257,7 +257,7 @@ class Subscriber(UnisenderModel):
     ]
     list_ids = models.ManyToManyField(
         SubscribeList, related_name='subscribers',
-        verbose_name=_(u'Списки рассылки'), blank=True, null=True)
+        verbose_name=_(u'Списки рассылки'))
     tags = models.ManyToManyField(Tag, related_name='subscribers',
                                   verbose_name=u'Метки', blank=True, null=True)
     contact_type = models.CharField(_(u'Тип контакта'), max_length=50,
@@ -300,11 +300,11 @@ class Subscriber(UnisenderModel):
         fields = self.fields.all().prefetch_related('field').select_related(
             'value', 'field__name')
         result.update({item.field.name: item.value for item in fields})
-        return '&'.join('fields[%s]=%s' % (item, result[item]) for item in result.keys())
+        return result
 
-    def serialize_fields_id(self):
+    def serialize_list_id(self):
         return ','.join(str(x) for x in self.list_ids.all().values_list(
-            'pk', flat=True))
+            'unisender_id', flat=True))
 
     def serialize_tags(self):
         return ','.join(str(x) for x in self.tags.all().values_list(
@@ -316,19 +316,21 @@ class Subscriber(UnisenderModel):
         http://www.unisender.com/ru/help/api/subscribe/
         '''
         api = self.get_api()
+        params = {}
         responce = api.subscribe(
-            params={'list_ids': self.serialize_fields_id(),
-                    'fields': self.serialize_fields(),
-                    'tags': self.serialize_tags(),
-                    'double_optin  ': self.double_optin})
+            fields=self.serialize_fields(),
+            list_ids=self.serialize_list_id(),
+            tags=self.serialize_tags(), double_optin=self.double_optin)
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
+
         if result:
+            self.sync = True
+            self.last_error = None
             return result['person_id']
         if error:
-            # TODO last errors
-            pass
+           self.last_error = error
         if warning:
             # TODO last warnings
             pass
@@ -340,18 +342,16 @@ class Subscriber(UnisenderModel):
         '''
         api = self.get_api()
         responce = api.unsubscribe(
-            params={'list_ids': self.serialize_fields_id(),
-                    'contact_type': self.contact_type,
-                    'contact': self.contact,
-                    'double_optin  ': self.double_optin})
+            list_ids=self.serialize_fields_id(),
+            contact_type=self.contact_type, contact=self.contact,
+            double_optin=self.double_optin)
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
         if result:
             return result['id']
         if error:
-            # TODO last errors
-            pass
+            self.last_error = error
         if warning:
             # TODO last warnings
             pass
@@ -363,18 +363,16 @@ class Subscriber(UnisenderModel):
         '''
         api = self.get_api()
         responce = api.exclude(
-            params={'list_ids': self.serialize_fields_id(),
-                    'contact_type': self.contact_type,
-                    'contact': self.contact,
-                    'double_optin  ': self.double_optin})
+            contact=self.contact,
+            list_ids=self.serialize_list_id(), contact_type=self.contact_type)
+        print '\naa %s\n' % responce
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
         if result:
             return result['id']
         if error:
-            # TODO last errors
-            pass
+            self.last_error = error
         if warning:
             # TODO last warnings
             pass
