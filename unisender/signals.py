@@ -45,12 +45,6 @@ def sync_subscriber_on_save(sender, instance, **kwargs):
 @receiver(m2m_changed, sender=Subscriber.list_ids.through)
 def sync_subscriber_m2m_on_save(sender, instance, action, **kwargs):
     if action == 'pre_clear':
-        print '\naaaaaaaaaaaaaaaaa\n'
-        print '\n%s\n' % action
-        print '\n%s\n' % instance.list_ids.all()
         instance.exclude()
     if action == 'post_add':
         instance.unisender_id = instance.subscribe()
-        print '\naa-----------------------------a\n'
-        print '\n%s\n' % action
-        print '\n%s\n' % instance.list_ids.all()
