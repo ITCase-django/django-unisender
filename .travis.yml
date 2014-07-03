@@ -9,7 +9,8 @@ python:
 
 install:
   - pip install nose coverage coveralls
-  - pip install .
+  - pip install pyunisend django mock
+  - pip install git+git://github.com/ITCase/django-tinymce-4 
 
 script:
   runtest.py 
