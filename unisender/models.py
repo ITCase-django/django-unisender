@@ -14,12 +14,13 @@ from pyunisend import PyUniSend
 
 # app imports
 from error_codes import UNISENDER_COMMON_ERRORS
-from settings import UNISENDER_API_KEY
+from settings import UNISENDER_API_KEY, UNISENDER_TEST_MODE
 
 from unisender.managers import (
     UnisenderTagManager, UnisenderFieldManager, UnisenderListManager,
     UnisenderCampaignManager)
 
+test_mode = 1 if UNISENDER_TEST_MODE else 0
 
 class UnisenderModel(models.Model):
     default_error_message = _(u'неизвестная ошибка')
@@ -37,12 +38,16 @@ class UnisenderModel(models.Model):
 
     def get_last_error(self):
         if self.last_error:
-            return self.error_dict.get(self.last_error, self.default_error_message)
+            try:
+                return self.error_dict[self.last_error]
+            except KeyError:
+                return self.last_error
         else:
             return None
+    get_last_error.short_description = u'последняя ошибка'
 
     def get_api(self):
-        return PyUniSend(UNISENDER_API_KEY)
+        return PyUniSend(UNISENDER_API_KEY, test_mode=test_mode)
 
     class Meta:
         abstract = True
@@ -84,22 +89,26 @@ class Field(UnisenderModel):
 
     unisender = UnisenderFieldManager()
 
+    def _serialize_visible(self):
+        return 1 if self.visible else 0
+
     def create_field(self):
         '''
         http://www.unisender.com/ru/help/api/createField/
         '''
         api = self.get_api()
         responce = api.createField(
-            params={'name': self.name, 'type': self.field_type,
-                    'is_visible ': self.visible, 'view_pos': self.sort, })
+            name=self.name, type=self.field_type,
+            is_visible=self._serialize_visible(), view_pos=self.sort)
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
         if result:
+            self.sync = True
+            self.last_error = None
             return result['id']
         if error:
-            # TODO last errors
-            pass
+            self.last_error = error
         if warning:
             # TODO last warnings
             pass
@@ -110,17 +119,18 @@ class Field(UnisenderModel):
         '''
         api = self.get_api()
         responce = api.updateField(
-            params={'id': self.unisender_id, 'name': self.name,
-                    'type': self.field_type, 'is_visible ': self.visible,
-                    'view_pos': self.sort, })
+            id=self.unisender_id, name=self.name,
+            type=self.field_type, is_visible=self._serialize_visible(),
+            view_pos=self.sort)
         result = responce.get('id')
         error = responce.get('error')
         warning = responce.get('warning')
         if result:
+            self.sync = True
+            self.last_error = None
             return result
         if error:
-            # TODO last errors
-            pass
+            self.last_error = error
         if warning:
             # TODO last warnings
             pass
@@ -130,13 +140,12 @@ class Field(UnisenderModel):
         http://www.unisender.com/ru/help/api/deleteField/
         '''
         api = self.get_api()
-        responce = api.deleteField(
-            params={'id': self.unisender_id})
+        responce = api.deleteField(id=self.unisender_id)
         error = responce.get('error')
         warning = responce.get('warning')
         if error:
-            # TODO last errors
-            pass
+            self.sync = True
+            self.last_error = None
         if warning:
             # TODO last warnings
             pass
@@ -565,7 +574,7 @@ class Campaign(UnisenderModel):
         '''
         params = {'message_id ': self.email_message.unisender_id,
                   'track_read': self.track_read,
-                  'track_links ': self.track_links ,
+                  'track_links ': self.track_links,
                   'contacts': self.serrialize_contacts(),
                   'defer': 1,
                   'track_ga ': self.track_ga}

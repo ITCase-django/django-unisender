@@ -7,13 +7,13 @@ from unisender.models import (
 
 unisender_fieldsets = [
     [u'Unisender', {
-     'fields': ['unisender_id', 'sync']
+     'fields': ['unisender_id', 'sync', 'get_last_error']
      }]
 ]
 
 
 class UnisenderAdmin(admin.ModelAdmin):
-    readonly_fields = ['unisender_id', 'sync']
+    readonly_fields = ['unisender_id', 'sync', 'get_last_error']
 
     fieldsets = unisender_fieldsets
 
@@ -93,7 +93,6 @@ class EmailMessageAdmin(UnisenderAdmin):
         '__unicode__', 'sender_name', 'subject', 'unisender_id', 'sync')
     list_display_links = ('__unicode__', )
     search_fields = ['sender_name', 'subject', 'body', ]
-    filter_horizontal = ['tags']
 
 admin.site.register(EmailMessage, EmailMessageAdmin)
 
