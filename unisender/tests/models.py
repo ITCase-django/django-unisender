@@ -10,48 +10,7 @@ from unisender.models import (
 
 
 from unisender.error_codes import UNISENDER_COMMON_ERRORS
-
-
-def unisender_test_api(UnisenderModel):
-    class UnisenderMockAPI(object):
-
-        def createField(self, **kwargs):
-            return {'result': {'id': 1}}
-
-        def updateField(self, **kwargs):
-            return {'id': 1}
-
-        def deleteField(self, **kwargs):
-            return {'result': {}}
-
-        def deleteList(self, **kwargs):
-            return {'result': {}}
-
-        def updateList(self, **kwargs):
-            return {'result': {}}
-
-        def createList(self, **kwargs):
-            return {'result': {'id': 1}}
-
-        def subscribe(self, **kwargs):
-            return {'result': {'person_id': 1}}
-
-        def unsubscribe(self, **kwargs):
-            return {'result': {}}
-
-        def exclude(self, **kwargs):
-            return {'result': {}}
-
-        def deleteMessage(self, **kwargs):
-            return {'result': {}}
-
-        def createEmailMessage(self, **kwargs):
-            return {'result': {'message_id': 1}}
-
-        def createCampaign(self, **kwargs):
-            return {'result': {'campaign_id': 1, 'status': 'scheduled',
-                               'count': 2}}
-    return UnisenderMockAPI()
+from .mock_api import unisender_test_api, unisender_test_api_errors
 
 
 class FieldModelTestCase(TestCase):
@@ -59,17 +18,16 @@ class FieldModelTestCase(TestCase):
     def setUp(self):
         self.field = Field.objects.create(name='test')
 
-    @patch.object(Field, 'get_api', unisender_test_api)
+    @patch.object(Field, 'get_api', unisender_test_api_errors)
     def test__get_last_error(self):
         field = Field.objects.create(name='test')
-        self.assertIsNone(field.get_last_error())
-        field.last_error = 'invalid_arg'
-        field.save()
         self.assertEquals(
             UNISENDER_COMMON_ERRORS['invalid_arg'], field.get_last_error())
-        field.last_error = 'test'
-        field.save()
-        self.assertEquals('test', field.get_last_error())
+
+    @patch.object(Field, 'get_api', unisender_test_api)
+    def test__get_last_error_none(self):
+        field = Field.objects.create(name='test')
+        self.assertIsNone(field.get_last_error())
 
     @patch.object(Field, 'get_api', unisender_test_api)
     def test__create_field(self):
@@ -129,19 +87,19 @@ class SubscriberTestCase(TestCase):
             {u'test': u'test_value', 'phone': '9123456789', u'test_2': u'test_value_2'},
             subscriber_2.serialize_fields())
 
+    @patch.object(Subscriber, 'get_api', unisender_test_api)
+    @patch.object(SubscribeList, 'get_api', unisender_test_api)
     def test__serialize_list_id(self):
         subscriber = Subscriber.objects.create(contact='mail@example.com')
         subscriber_list_1 = SubscribeList.objects.create(
-            title='test', unisender_id=1)
+            title='test')
         subscriber.list_ids.add(subscriber_list_1)
         self.assertEquals(
             str(subscriber_list_1.pk), subscriber.serialize_list_id())
         subscriber_list_2 = SubscribeList.objects.create(
-            title='test_2', unisender_id=1)
+            title='test_2')
         subscriber.list_ids.add(subscriber_list_2)
-        self.assertEquals(
-            '%s,%s' % (subscriber_list_1.pk,
-            subscriber_list_2.pk), subscriber.serialize_list_id())
+        self.assertEquals('1,1', subscriber.serialize_list_id())
 
     def test__serialize_tags(self):
         subscriber = Subscriber.objects.create(contact='mail@example.com')
