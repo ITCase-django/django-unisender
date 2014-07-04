@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
+from django import forms
+from django.db import models
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
@@ -81,7 +83,7 @@ admin.site.register(Subscriber, SubscriberAdmin)
 class EmailMessageAdmin(UnisenderAdmin):
     fieldsets = unisender_fieldsets + [
         (u'Сообщение', {
-            'fields': ['sender_name', 'sender_email', 'subject', 'body', 'list_id', 'tags',
+            'fields': ['sender_name', 'sender_email', 'subject', 'body', 'list_id',
                        'lang', 'text_body', 'generate_text', 'wrap_type',
                        'categories', 'tag']
         }),

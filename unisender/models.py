@@ -5,7 +5,7 @@ from datetime import datetime
 # django imports
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
+from django import forms
 # third part imports
 from tinymce_4.fields import TinyMCEModelField
 
@@ -408,8 +408,7 @@ class MessageModel(UnisenderModel):
         error = responce.get('error')
         warning = responce.get('warning')
         if error:
-            # TODO last errors
-            pass
+            self.last_error = error
         if warning:
             # TODO last warnings
             pass
@@ -423,7 +422,7 @@ class EmailMessage(MessageModel):
     LANGUAGES = [
         ('ru', _(u'русский')),
         ('en', _(u'английский')),
-        ('it', _(u'иткальянский')),
+        ('it', _(u'итальянский')),
     ]
     TEXT_GENERATE = [
         ('0', _(u'Нет')),
@@ -437,7 +436,12 @@ class EmailMessage(MessageModel):
     ]
     sender_name = models.CharField(_(u'Имя отправителя'), max_length=255)
     sender_email = models.CharField(
-        _(u'E-mail адрес отправителя'), max_length=255)
+        _(u'E-mail адрес отправителя'), max_length=255,
+        help_text=_(u'''Этот e-mail должен быть проверен (для этого надо создать
+                      вручную хотя бы одно письмо с этим обратным адресом через
+                      веб-интерфейс, затем нажать на ссылку
+                      «отправьте запрос подтверждения» и перейти по ссылке из
+                      письма).'''))
     subject = models.CharField(_(u'Тема'), max_length=255)
     body = TinyMCEModelField(_(u'Текст письма в формате HTML'))
     list_id = models.ForeignKey(SubscribeList, verbose_name=u'Список рассылки',
@@ -456,10 +460,12 @@ class EmailMessage(MessageModel):
                                      default=TEXT_GENERATE[1][0])
     wrap_type = models.CharField(_(u'Выравнивание текста сообщения'),
                                  max_length=50,
-                                 choices=TEXT_GENERATE,
-                                 default=TEXT_GENERATE[0][0])
+                                 choices=WRAP_TYPE,
+                                 default=WRAP_TYPE[0][0])
     categories = models.CharField(
-        _(u'Категории письма'), max_length=255, blank=True, null=True)
+        _(u'Категории письма'), max_length=255, blank=True, null=True,
+        help_text=_(u'Категории письма, перечисленные в текстовом виде через'
+                     u' запятую'))
     series_day = models.PositiveSmallIntegerField(
         _(u'День отправки для автоматически рассылаемого письма'),
         help_text='''Если задан, то это должно быть целое положительное число,
@@ -482,7 +488,7 @@ class EmailMessage(MessageModel):
                   'sender_email': self.sender_email,
                   'subject': self.subject,
                   'body': self.body,
-                  'list_id': self.list_id,
+                  'list_id': self.list_id.unisender_id,
                   'generate_text': self.generate_text,
                   'tag': self.tag,
                   'lang': self.lang,
@@ -492,20 +498,19 @@ class EmailMessage(MessageModel):
         if self.series_day:
             params['series_day'] = self.series_day
         if self.series_time:
-            params['series_time'] = self.series_time
+            params['series_time'] = self.series_time.strftime('%H:%M')
         if self.categories:
             params['categories'] = self.categories
         api = self.get_api()
-        responce = api.createEmailMessage(
-            params=params)
+        responce = api.createEmailMessage(**params)
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
         if result:
+            self.sync = True
             return result['message_id']
         if error:
-            # TODO last errors
-            pass
+            self.last_error = error
         if warning:
             # TODO last warnings
             pass
