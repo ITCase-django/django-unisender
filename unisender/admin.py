@@ -45,15 +45,15 @@ class FieldAdmin(UnisenderAdmin):
     def save_model(self, request, obj, form, change):
         if obj.pk:
             if obj.unisender_id:
-                obj.update_field()
+                obj.update_field(request)
             else:
-                obj.unisender_id = obj.create_field()
+                obj.unisender_id = obj.create_field(request)
         else:
-            obj.unisender_id = obj.create_field()
+            obj.unisender_id = obj.create_field(request)
         obj.save()
 
     def delete_model(self, request, obj):
-        obj.delete_field()
+        obj.delete_field(request)
         obj.delete()
 
 admin.site.register(Field, FieldAdmin)

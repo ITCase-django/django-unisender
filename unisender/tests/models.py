@@ -155,7 +155,7 @@ class SubscriberTestCase(TestCase):
     @patch.object(Subscriber, 'get_api', unisender_test_api)
     def test__exclude(self):
         subscriber = Subscriber.objects.create(contact='mail@example.com')
-        self.assertIsNone(subscriber.unsubscribe())
+        self.assertIsNone(subscriber.exclude())
 
     @patch.object(Subscriber, 'get_api', unisender_test_api_errors)
     def test__subscribe_error(self):

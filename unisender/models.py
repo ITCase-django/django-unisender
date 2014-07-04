@@ -57,9 +57,12 @@ class UnisenderModel(models.Model):
         if request:
             messages.success(request, message)
 
-    def log_error(self, request=None):
+    def log_error(self, request=None, error=None):
+        last_error = error if error else self.get_last_error()
         if request:
-            messages.error(request, _(u'При синхронизации с unisender проиошла ошибка: %s' % self.get_last_error()))
+            messages.error(
+                request,
+                _(u'При синхронизации с unisender проиошла ошибка: %s' % last_error))
 
     class Meta:
         abstract = True
@@ -165,7 +168,7 @@ class Field(UnisenderModel):
         if warning:
             self.log_warning(warning, request)
         if error:
-            self.log_error(request)
+            self.log_error(request, error)
             self.log_warning(
                 _(u'''Не удалось удалить поле из БД unisender, вам необходимо
                       удалить его самостоятельно'''), request)
