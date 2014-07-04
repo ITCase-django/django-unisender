@@ -14,7 +14,7 @@ install:
 script:
 
 script:
-  coverage run --source=unisender runtest.py unisender
+  coverage run --source=unisender runtest.py
 
 after_success:
   coveralls
