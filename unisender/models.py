@@ -221,6 +221,9 @@ class SubscribeList(UnisenderModel):
             self.log_warning(
                 _(u'''Не удалось удалить список рассылки из БД unisender,
                       вам необходимо удалить его самостоятельно'''), request)
+            return
+        self.success_message(
+            _(u'Список рассылки успешно удален из БД unisender'), request)
 
     def update_list(self, request=None):
         '''
@@ -236,17 +239,16 @@ class SubscribeList(UnisenderModel):
         warning = responce.get('warning')
         if warning:
             self.log_warning(warning, request)
-        if result:
-            self.sync = True
-            self.last_error = None
-            self.success_message(_(
-                u'''Список рассылки %s успешно синхронизирован
-                    с unisender''' % self.title),
-                request=request)
-            return result['id']
         if error:
             self.last_error = error
             self.log_error(request)
+            return
+        self.sync = True
+        self.last_error = None
+        self.success_message(_(
+            u'''Список рассылки %s успешно синхронизирован
+                с unisender''' % self.title),
+            request=request)
 
     def create_list(self, request=None):
         '''

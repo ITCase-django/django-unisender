@@ -70,6 +70,20 @@ class SubscribeListAdmin(UnisenderAdmin):
     list_display_links = ('__unicode__', )
     search_fields = ['title', ]
 
+    def save_model(self, request, obj, form, change):
+        if obj.unisender_id:
+            if obj.pk:
+                obj.update_list(request)
+            else:
+                obj.unisender_id = obj.create_list(request)
+        else:
+            obj.unisender_id = obj.create_list(request)
+        obj.save()
+
+    def delete_model(self, request, obj):
+        obj.delete_list(request)
+        obj.delete()
+
 admin.site.register(SubscribeList, SubscribeListAdmin)
 
 
