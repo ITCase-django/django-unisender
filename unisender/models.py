@@ -403,8 +403,7 @@ class MessageModel(UnisenderModel):
         http://www.unisender.com/ru/help/api/deleteMessage/
         '''
         api = self.get_api()
-        responce = api.deleteMessage(
-            params={'id': self.unisender_id})
+        responce = api.deleteMessage(message_id=self.unisender_id)
         error = responce.get('error')
         warning = responce.get('warning')
         if error:
@@ -412,6 +411,14 @@ class MessageModel(UnisenderModel):
         if warning:
             # TODO last warnings
             pass
+
+    def delete(self):
+        if self.unisender_id:
+            self.delete_message()
+            if self.get_last_error():
+                # TODO MSG
+                return
+        super(MessageModel, self).delete()
 
     class Meta:
         abstract = True

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 def unisender_test_api(UnisenderModel):
     class UnisenderMockAPI(object):
 
@@ -41,12 +42,14 @@ def unisender_test_api(UnisenderModel):
                                'count': 2}}
     return UnisenderMockAPI()
 
+
 def unisender_test_api_errors(UnisenderModel):
     class UnisenderMockAPI(object):
 
         def createField(self, **kwargs):
             return {'result': '', 'error': 'invalid_arg'}
 
+        def deleteMessage(self, **kwargs):
+            return {'error': 'message not found', 'result': ''}
+
     return UnisenderMockAPI()
-
-

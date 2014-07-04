@@ -138,6 +138,12 @@ class EmailMessageTestCase(TestCase):
     def test__delete_message(self):
         self.assertIsNone(self.message.delete_message())
 
+    @patch.object(EmailMessage, 'get_api', unisender_test_api_errors)
+    def test__delete_message_errors(self):
+        self.message.delete_message()
+        self.assertIsNotNone(self.message)
+        self.assertIsNotNone(self.message.get_last_error())
+
     @patch.object(EmailMessage, 'get_api', unisender_test_api)
     def test__create_email_message(self):
         self.assertEquals(self.message.create_email_message(), 1)
