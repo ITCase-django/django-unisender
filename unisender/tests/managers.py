@@ -74,15 +74,13 @@ class FieldManagerTestCase(TestCase):
 
     def test__get_and_update_fields(self):
         self.manager.get_and_update_fields()
-        field_1 = Field.objects.get(unisender_id=1)
-        self.assertEquals(field_1.name, 'test 1')
+        field_1 = Field.objects.get(name='test 1')
         self.assertEquals(field_1.field_type, 'string')
         self.assertEquals(field_1.sort, 1)
         self.assertFalse(field_1.sync)
         self.assertTrue(field_1.visible)
 
-        field_2 = Field.objects.get(unisender_id=2)
-        self.assertEquals(field_2.name, 'test 2')
+        field_2 = Field.objects.get(name='test 2')
         self.assertEquals(field_2.field_type, 'text')
         self.assertFalse(field_2.sync)
         self.assertTrue(field_2.visible)
@@ -117,11 +115,9 @@ class ListManagerTestCase(TestCase):
 
     def test__get_and_update_subscribe_lists(self):
         self.manager.get_and_update_lists()
-        list_1 = SubscribeList.objects.get(unisender_id=1)
-        self.assertEquals(list_1.title, 'test 1')
+        list_1 = SubscribeList.objects.get(title='test 1')
         self.assertFalse(list_1.sync)
-        list_2 = SubscribeList.objects.get(unisender_id=2)
-        self.assertEquals(list_2.title, 'test 2')
+        list_2 = SubscribeList.objects.get(title='test 2')
         self.assertFalse(list_2.sync)
 
 

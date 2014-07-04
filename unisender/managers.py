@@ -2,12 +2,15 @@
 from django.db import models
 
 from pyunisend import PyUniSend
-from settings import UNISENDER_API_KEY
+from settings import UNISENDER_API_KEY, UNISENDER_TEST_MODE
+
+
+test_mode = 1 if UNISENDER_TEST_MODE else 0
 
 
 class UnisenderManager(models.Manager):
 
-    api = PyUniSend(UNISENDER_API_KEY)
+    api = PyUniSend(UNISENDER_API_KEY, test_mode=test_mode)
 
 
 class UnisenderTagManager(UnisenderManager):
