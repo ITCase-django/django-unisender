@@ -1,0 +1,13 @@
+{% extends "admin/change_form.html" %}
+
+<!-- LOADING -->
+{% load i18n %}
+
+
+<!-- OBJECT TOOLS -->
+{% block object-tools-items %}
+    {{ block.super }}
+    {% if show_get_statistic_button %}
+        <li><a href="{% url 'admin:unisender_campaign_get_statistic' pk=pk %}">{% trans "Получить/обновить статистику" %}</a></li>
+    {% endif %}
+{% endblock %}

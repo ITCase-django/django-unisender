@@ -717,6 +717,7 @@ class Campaign(UnisenderModel):
         error = responce.get('error')
         warning = responce.get('warning')
         if result:
+            self.last_error = None
             self.status = result.get('status')
             self.creation_time = result.get('creation_time')
             self.start_time = result.get('start_time')
@@ -737,6 +738,7 @@ class Campaign(UnisenderModel):
         error = responce.get('error')
         warning = responce.get('warning')
         if result:
+            self.last_error = None
             self.total = result.get('total')
             data = result.get('data')
             for item in data.keys():

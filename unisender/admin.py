@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
+from django.conf.urls import patterns, url
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
     EmailMessage, SmsMessage, Campaign)
+
+from unisender.views import GetCampaignStatistic
 
 unisender_fieldsets = [
     [u'Unisender', {
@@ -101,6 +104,7 @@ admin.site.register(SmsMessage)
 
 
 class CampaignAdmin(UnisenderAdmin):
+    change_form_template = 'unisender/admin/change_campaign.html'
     fieldsets = unisender_fieldsets + [
         (u'Рассылка', {
             'fields': ['name', 'email_message', 'start_time',
@@ -115,33 +119,60 @@ class CampaignAdmin(UnisenderAdmin):
 
     filter_horizontal = ['contacts']
 
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.sync:
+            result = list(set(
+                [field.name for field in self.opts.local_fields] +
+                [field.name for field in self.opts.local_many_to_many]
+            ))
+            result += ['get_last_error', 'get_error_count', 'get_success_count']
+            return result
+        return super(CampaignAdmin, self).get_readonly_fields(request, obj=None)
+
+    def get_fieldsets(self, request, obj=None):
+        field_sets = super(
+            CampaignAdmin, self).get_fieldsets(request, obj=None)
+        if obj and obj.sync:
+            field_sets = field_sets + [
+                (u'Статус', {
+                 'fields': ['status', 'start_time', ]
+                 }),
+                (u'Краткая информация', {
+                 'fields': ['get_error_count', 'get_success_count']
+                 }),
+                (u'Подробная информация', {
+                 'fields': ['not_sent', 'ok_delivered', 'ok_read',
+                            'ok_spam_folder', 'ok_link_visited',
+                            'ok_unsubscribed',
+                            'err_user_unknown', 'err_user_inactive',
+                            'err_mailbox_full', 'err_spam_rejected',
+                            'err_spam_folder', 'err_delivery_failed',
+                            'err_will_retry', 'err_resend', 'err_not_allowed',
+                            'err_domain_inactive', 'err_unsubscribed',
+                            'err_skip_letter', 'err_spam_retry',
+                            'err_src_invalid', 'err_dest_invalid',
+                            'err_not_available', 'err_lost', 'err_internal', ]
+                 })]
+        return field_sets
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        campaign = Campaign.objects.get(pk=object_id)
+        if campaign.sync:
+            extra_context['show_get_statistic_button'] = True
+            extra_context['pk'] = object_id
+        return super(CampaignAdmin, self).change_view(request, object_id,
+            form_url, extra_context=extra_context)
+
+
+    def get_urls(self):
+        urls = super(CampaignAdmin, self).get_urls()
+        my_urls = patterns('',
+            url(r'(?P<pk>\d+)/get_statistic/$',
+             self.admin_site.admin_view(GetCampaignStatistic.as_view()),
+             name='unisender_campaign_get_statistic',
+             ),
+        )
+        return my_urls + urls
+
 admin.site.register(Campaign, CampaignAdmin)
-
-# model deleted need custom view
-# class CampaignStatusAdmin(UnisenderAdmin):
-#     fieldsets = unisender_fieldsets + [
-#         (u'Статус', {
-#             'fields': ['campaign', 'status', 'start_time',]
-#         }),
-#         (u'Краткая информация', {
-#             'fields': ['get_error_count', 'get_success_count' ]
-#         }),
-#         (u'Подробная информация', {
-#             'fields': ['not_sent', 'ok_delivered', 'ok_read',
-#                        'ok_spam_folder', 'ok_link_visited', 'ok_unsubscribed',
-#                        'err_user_unknown', 'err_user_inactive',
-#                        'err_mailbox_full', 'err_spam_rejected',
-#                        'err_spam_folder', 'err_delivery_failed',
-#                        'err_will_retry', 'err_resend', 'err_domain_inactive',
-#                        'err_skip_letter', 'err_spam_retry', 'err_unsubscribed',
-#                        'err_src_invalid', 'err_dest_invalid', 'err_not_allowed',
-#                        'err_not_available', 'err_lost', 'err_internal', ]
-#         })]
-
-#     list_display = (
-#         '__unicode__', 'status', 'campaign', 'get_error_count',
-#         'get_success_count', 'unisender_id', 'sync')
-#     list_display_links = ('__unicode__', )
-#     search_fields = ['campaign', 'status', ]
-#     readonly_fields = ['get_error_count', 'get_success_count', 'unisender_id', 'sync']
-# admin.site.register(CampaignStatus, CampaignStatusAdmin)
