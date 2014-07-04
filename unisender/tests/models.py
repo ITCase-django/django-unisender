@@ -174,16 +174,53 @@ class CampaignTestCase(TestCase):
         self.assertEquals(self.campaign.create_campaign(), 1)
 
     def test__get_success_count(self):
-        pass
-
-    def test__get_campaign_status(self):
-        pass
-
-    def test__get_campaign_agregate_stats(self):
-        pass
-
-    def test__get_visited_links(self):
-        pass
+        self.campaign.ok_delivered = 5
+        self.campaign.ok_link_visited = 2
+        self.campaign.ok_unsubscribed = 3
+        self.campaign.ok_read = 1
+        self.campaign.ok_spam_folder =4
+        self.campaign.save()
+        self.assertEquals(self.campaign.get_success_count(), 15)
 
     def test__get_error_count(self):
+        self.campaign.err_user_unknown = 1
+        self.campaign.err_user_inactive = 2
+        self.campaign.err_mailbox_full = 1
+        self.campaign.err_spam_rejected = 3
+        self.campaign.err_spam_folder = 1
+        self.campaign.err_delivery_failed = 1
+        self.campaign.err_will_retry = 1
+        self.campaign.err_resend = 1
+        self.campaign.err_domain_inactive = 7
+        self.campaign.err_skip_letter = 1
+        self.campaign.err_spam_skipped = 1
+        self.campaign.err_spam_retry = 1
+        self.campaign.err_unsubscribed = 1
+        self.campaign.err_src_invalid = 1
+        self.campaign.err_dest_invalid = 1
+        self.campaign.err_not_allowed = 9
+        self.campaign.err_not_available = 1
+        self.campaign.err_lost = 1
+        self.campaign.err_internal = 10
+        self.campaign.save()
+        self.assertEquals(self.campaign.get_error_count(), 45)
+
+    @patch.object(Campaign, 'get_api', unisender_test_api)
+    def test__get_campaign_status(self):
+        self.campaign.get_campaign_status()
+        self.assertEquals(self.campaign.status, 'completed')
+        self.assertEquals(self.campaign.creation_time, '2011-09-21 19:47:31')
+        self.assertEquals(self.campaign.start_time, '2011-09-21 20:00:00')
+
+    @patch.object(Campaign, 'get_api', unisender_test_api)
+    def test__get_campaign_agregate_stats(self):
+        self.campaign.get_campaign_agregate_stats()
+        self.assertEquals(self.campaign.total, 241)
+        self.assertEquals(self.campaign.ok_read, 239)
+        self.assertEquals(self.campaign.err_will_retry, 2)
+
+    def test__get_visited_links(self):
+        # issue 23 делаем потом
         pass
+
+

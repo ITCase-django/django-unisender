@@ -674,6 +674,8 @@ class Campaign(UnisenderModel):
     err_internal = models.PositiveSmallIntegerField(
         _(u'внутренний сбой, при котором переотправка письма отправителем не должна осуществляться'),
         default=0)
+    total = models.PositiveSmallIntegerField(_(u'Общее количество обработанных сообщений'),
+        default=0)
 
     unisender = UnisenderCampaignManager()
 
@@ -709,16 +711,47 @@ class Campaign(UnisenderModel):
         '''
         http://www.unisender.com/ru/help/api/getCampaignStatus/
         '''
-        pass
+        api = self.get_api()
+        responce = api.getCampaignStatus(campaign_id=self.unisender_id)
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if result:
+            self.status = result.get('status')
+            self.creation_time = result.get('creation_time')
+            self.start_time = result.get('start_time')
+            return result
+        if error:
+            self.last_error = error
+        if warning:
+            # TODO last warnings
+            pass
 
     def get_campaign_agregate_stats(self):
         '''
         http://www.unisender.com/ru/help/api/getCampaignAggregateStats/
         '''
-        pass
+        api = self.get_api()
+        responce = api.getCampaignAggregateStats(campaign_id=self.unisender_id)
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if result:
+            self.total = result.get('total')
+            data = result.get('data')
+            for item in data.keys():
+                if hasattr(self, item):
+                    setattr(self, item, data[item])
+            return result
+        if error:
+            self.last_error = error
+        if warning:
+            # TODO last warnings
+            pass
 
     def get_visited_links(self):
         '''
+        # issue 23 делаем потом
         http://www.unisender.com/ru/help/api/getVisitedLinks/
         '''
         pass

@@ -40,6 +40,17 @@ def unisender_test_api(UnisenderModel):
         def createCampaign(self, **kwargs):
             return {'result': {'campaign_id': 1, 'status': 'scheduled',
                                'count': 2}}
+
+        def getCampaignStatus(self, **kwargs):
+            return {'result': {'status': 'completed',
+                               'creation_time': '2011-09-21 19:47:31',
+                               'start_time': '2011-09-21 20:00:00'}}
+
+        def getCampaignAggregateStats(self, **kwargs):
+            return {'result': {'total': 241, 'data': {
+                'ok_read': 239, 'err_will_retry': 2}}
+            }
+
     return UnisenderMockAPI()
 
 
