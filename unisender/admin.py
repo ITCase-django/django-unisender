@@ -42,6 +42,20 @@ class FieldAdmin(UnisenderAdmin):
     search_fields = ['name', ]
     list_editable = ('field_type', 'visible', 'sort')
 
+    def save_model(self, request, obj, form, change):
+        if obj.pk:
+            if obj.unisender_id:
+                obj.update_field()
+            else:
+                obj.unisender_id = obj.create_field()
+        else:
+            obj.unisender_id = obj.create_field()
+        obj.save()
+
+    def delete_model(self, request, obj):
+        obj.delete_field()
+        obj.delete()
+
 admin.site.register(Field, FieldAdmin)
 
 

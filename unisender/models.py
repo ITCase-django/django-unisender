@@ -6,6 +6,7 @@ from datetime import datetime
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django import forms
+from django.contrib import messages
 # third part imports
 from tinymce_4.fields import TinyMCEModelField
 
@@ -47,6 +48,18 @@ class UnisenderModel(models.Model):
 
     def get_api(self):
         return PyUniSend(UNISENDER_API_KEY, test_mode=test_mode)
+
+    def log_warning(self, msg, request=None):
+        if request:
+            messages.warning(request, _(u'Сообщение при синхронизации с unisender: %s' % msg))
+
+    def success_message(self, message, request=None):
+        if request:
+            messages.success(request, message)
+
+    def log_error(self, request=None):
+        if request:
+            messages.error(request, _(u'При синхронизации с unisender проиошла ошибка: %s' % self.get_last_error()))
 
     class Meta:
         abstract = True
@@ -91,7 +104,7 @@ class Field(UnisenderModel):
     def _serialize_visible(self):
         return 1 if self.visible else 0
 
-    def create_field(self):
+    def create_field(self, request=None):
         '''
         http://www.unisender.com/ru/help/api/createField/
         '''
@@ -102,17 +115,21 @@ class Field(UnisenderModel):
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if result:
             self.sync = True
             self.last_error = None
+            self.success_message(
+                u'Поле %s успешно синхронизировано с unisender' % self.name,
+                request=request)
             return result['id']
         if error:
             self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
+            self.log_error(request)
 
-    def update_field(self):
+
+    def update_field(self, request=None):
         '''
         http://www.unisender.com/ru/help/api/updateField/
         '''
@@ -124,17 +141,20 @@ class Field(UnisenderModel):
         result = responce.get('id')
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if result:
             self.sync = True
             self.last_error = None
+            self.success_message(
+                u'Поле %s успешно синхронизировано с unisender' % self.name,
+                request=request)
             return result
         if error:
             self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
+            self.log_error(request)
 
-    def delete_field(self):
+    def delete_field(self, request=None):
         '''
         http://www.unisender.com/ru/help/api/deleteField/
         '''
@@ -142,12 +162,13 @@ class Field(UnisenderModel):
         responce = api.deleteField(id=self.unisender_id)
         error = responce.get('error')
         warning = responce.get('warning')
-        if error:
-            self.sync = True
-            self.last_error = None
         if warning:
-            # TODO last warnings
-            pass
+            self.log_warning(warning, request)
+        if error:
+            self.log_error(request)
+            self.log_warning(
+                _(u'''Не удалось удалить поле из БД unisender, вам необходимо
+                      удалить его самостоятельно'''), request)
 
     def __unicode__(self):
         return unicode(self.name)
@@ -182,7 +203,7 @@ class SubscribeList(UnisenderModel):
 
     unisender = UnisenderListManager()
 
-    def delete_list(self):
+    def delete_list(self, request=None):
         '''
         http://www.unisender.com/ru/help/api/deleteList/
         '''
@@ -190,14 +211,15 @@ class SubscribeList(UnisenderModel):
         responce = api.deleteList(list_id=self.unisender_id)
         error = responce.get('error')
         warning = responce.get('warning')
-        if error:
-            # TODO last errors
-            pass
         if warning:
-            # TODO last warnings
-            pass
+            self.log_warning(warning, request)
+        if error:
+            self.log_error(request)
+            self.log_warning(
+                _(u'''Не удалось удалить список рассылки из БД unisender,
+                      вам необходимо удалить его самостоятельно'''), request)
 
-    def update_list(self):
+    def update_list(self, request=None):
         '''
         http://www.unisender.com/ru/help/api/updateList/
         '''
@@ -209,15 +231,21 @@ class SubscribeList(UnisenderModel):
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if result:
+            self.sync = True
+            self.last_error = None
+            self.success_message(_(
+                u'''Список рассылки %s успешно синхронизирован
+                    с unisender''' % self.title),
+                request=request)
             return result['id']
         if error:
             self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
+            self.log_error(request)
 
-    def create_list(self):
+    def create_list(self, request=None):
         '''
         создает список
         http://www.unisender.com/ru/help/api/createList/
@@ -230,15 +258,19 @@ class SubscribeList(UnisenderModel):
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if result:
             self.sync = True
             self.last_error = None
+            self.success_message(_(
+                u'''Список рассылки %s успешно синхронизирован
+                    с unisender''' % self.title),
+                request=request)
             return result['id']
         if error:
             self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
+            self.log_error(request)
 
     def __unicode__(self):
         return unicode(self.title)
@@ -309,7 +341,7 @@ class Subscriber(UnisenderModel):
         return ','.join(str(x) for x in self.tags.all().values_list(
             'name', flat=True))
 
-    def subscribe(self):
+    def subscribe(self, request=None):
         '''
         добавить подписчика
         http://www.unisender.com/ru/help/api/subscribe/
@@ -323,19 +355,22 @@ class Subscriber(UnisenderModel):
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if result:
             self.sync = True
             self.last_error = None
+            self.success_message(_(
+                u'''Подписчик %s успешно синхронизирован
+                    с unisender''' % self.contact), request=request)
             return result['person_id']
         if error:
            self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
+           self.log_error(request)
 
-    def unsubscribe(self):
+    def unsubscribe(self, request=None):
         '''
-        убрать подписчика
+        убрать подписчика (по воле подписчика)
         http://www.unisender.com/ru/help/api/unsubscribe/
         '''
         api = self.get_api()
@@ -346,15 +381,18 @@ class Subscriber(UnisenderModel):
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if result:
+            self.success_message(_(
+                u'''Подписчик %s успешно синхронизирован
+                    с unisender''' % self.contact), request=request)
             return result['id']
         if error:
             self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
+            self.log_error(request)
 
-    def exclude(self):
+    def exclude(self, request=None):
         '''
         убрать подписчика
         http://www.unisender.com/ru/help/api/exclude/
@@ -366,13 +404,16 @@ class Subscriber(UnisenderModel):
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if result:
+            self.success_message(_(
+                u'''Подписчик %s успешно синхронизирован
+                    с unisender''' % self.contact), request=request)
             return result['id']
         if error:
             self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
+            self.log_error(request)
 
     def __unicode__(self):
         return unicode(self.contact)
@@ -396,7 +437,7 @@ class SubscriberFields(models.Model):
 
 class MessageModel(UnisenderModel):
 
-    def delete_message(self):
+    def delete_message(self, request=None):
         '''
         удалить сообщение
         http://www.unisender.com/ru/help/api/deleteMessage/
@@ -405,19 +446,14 @@ class MessageModel(UnisenderModel):
         responce = api.deleteMessage(message_id=self.unisender_id)
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if error:
             self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
-
-    def delete(self):
-        if self.unisender_id:
-            self.delete_message()
-            if self.get_last_error():
-                # TODO MSG
-                return
-        super(MessageModel, self).delete()
+            self.log_error(request)
+            self.log_warning(
+                _(u'''Не удалось сообщение из БД unisender, вам необходимо
+                      удалить его самостоятельно'''), request)
 
     class Meta:
         abstract = True
@@ -485,7 +521,7 @@ class EmailMessage(MessageModel):
         _(u'Время отправки для автоматически рассылаемого письма'),
         default=datetime.now())
 
-    def create_email_message(self):
+    def create_email_message(self, request=None):
         '''
         создать сообщение электронной почты
         http://www.unisender.com/ru/help/api/createEmailMessage/
@@ -512,14 +548,17 @@ class EmailMessage(MessageModel):
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if result:
             self.sync = True
+            self.success_message(_(
+                u'''Email сообщение %s успешно синхронизировано
+                    с unisender''' % self.subject), request=request)
             return result['message_id']
         if error:
             self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
+            self.log_error(request)
 
     def __unicode__(self):
         return unicode(self.subject)
@@ -707,7 +746,7 @@ class Campaign(UnisenderModel):
 
     get_success_count.short_description = u'Общее количество успешнодоставленных сообщений'
 
-    def get_campaign_status(self):
+    def get_campaign_status(self, request=None):
         '''
         http://www.unisender.com/ru/help/api/getCampaignStatus/
         '''
@@ -716,19 +755,22 @@ class Campaign(UnisenderModel):
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if result:
             self.last_error = None
             self.status = result.get('status')
             self.creation_time = result.get('creation_time')
             self.start_time = result.get('start_time')
+            self.success_message(_(
+                u'''Статус рассылки %s успешно синхронизирован
+                    с unisender''' % self.name), request=request)
             return result
         if error:
             self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
+            self.log_error(request)
 
-    def get_campaign_agregate_stats(self):
+    def get_campaign_agregate_status(self, request=None):
         '''
         http://www.unisender.com/ru/help/api/getCampaignAggregateStats/
         '''
@@ -737,6 +779,8 @@ class Campaign(UnisenderModel):
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if result:
             self.last_error = None
             self.total = result.get('total')
@@ -744,12 +788,13 @@ class Campaign(UnisenderModel):
             for item in data.keys():
                 if hasattr(self, item):
                     setattr(self, item, data[item])
+            self.success_message(_(
+                u'''Информация о рассылке %s успешно синхронизирована
+                    с unisender''' % self.name), request=request)
             return result
         if error:
             self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
+            self.log_error(request)
 
     def get_visited_links(self):
         '''
@@ -758,12 +803,11 @@ class Campaign(UnisenderModel):
         '''
         pass
 
-
     def serrialize_contacts(self):
         return ','.join(str(x) for x in self.contacts.all().values_list(
             'contact', flat=True))
 
-    def create_campaign(self):
+    def create_campaign(self, request=None):
         '''
         http://www.unisender.com/ru/help/api/createCampaign/
         '''
@@ -783,15 +827,18 @@ class Campaign(UnisenderModel):
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
         if result:
             self.last_error = None
             self.sync = True
+            self.success_message(_(
+                u'''Рассылка создана и %s успешно синхронизирована
+                    с unisender''' % self.name), request=request)
             return result['campaign_id']
         if error:
             self.last_error = error
-        if warning:
-            # TODO last warnings
-            pass
+            self.log_error(request)
 
     def __unicode__(self):
         return unicode(self.name)

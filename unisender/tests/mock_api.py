@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 def unisender_test_api(UnisenderModel):
     class UnisenderMockAPI(object):
 
@@ -55,12 +54,50 @@ def unisender_test_api(UnisenderModel):
 
 
 def unisender_test_api_errors(UnisenderModel):
+
     class UnisenderMockAPI(object):
+        error_result = {'result': '', 'error': 'invalid_arg'}
 
         def createField(self, **kwargs):
-            return {'result': '', 'error': 'invalid_arg'}
+            return self.error_result
+
+        def updateField(self, **kwargs):
+            return self.error_result
+
+        def deleteField(self, **kwargs):
+            return self.error_result
+
+        def deleteList(self, **kwargs):
+            return self.error_result
+
+        def updateList(self, **kwargs):
+            return self.error_result
+
+        def createList(self, **kwargs):
+            return self.error_result
+
+        def subscribe(self, **kwargs):
+            return self.error_result
+
+        def unsubscribe(self, **kwargs):
+            return self.error_result
+
+        def exclude(self, **kwargs):
+            return self.error_result
 
         def deleteMessage(self, **kwargs):
-            return {'error': 'message not found', 'result': ''}
+            return self.error_result
+
+        def createEmailMessage(self, **kwargs):
+            return self.error_result
+
+        def createCampaign(self, **kwargs):
+            return self.error_result
+
+        def getCampaignStatus(self, **kwargs):
+            return self.error_result
+
+        def getCampaignAggregateStats(self, **kwargs):
+            return self.error_result
 
     return UnisenderMockAPI()
