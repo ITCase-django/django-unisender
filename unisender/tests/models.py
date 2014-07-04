@@ -4,9 +4,8 @@ from django.test import TestCase
 from mock import patch
 
 from unisender.models import (
-    UnisenderModel, Tag, Field, SubscribeList, Subscriber, SubscriberFields,
-    EmailMessage, Campaign, CampaignStatus
-)
+    Tag, Field, SubscribeList, Subscriber, SubscriberFields,
+    EmailMessage, Campaign,)
 
 
 from unisender.error_codes import UNISENDER_COMMON_ERRORS
@@ -175,9 +174,6 @@ class CampaignTestCase(TestCase):
         self.assertDictEqual(
             self.campaign.create_campaign(),
             {'campaign_id': 1, 'status': 'scheduled', 'count': 2})
-
-
-class CampaignStatusTestCase(TestCase):
 
     def test__get_success_count(self):
         pass

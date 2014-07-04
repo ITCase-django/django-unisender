@@ -541,7 +541,23 @@ class Campaign(UnisenderModel):
         ('0', _(u'Нет')),
         ('1', _(u'Да')),
     ]
-
+    STATUS_CHOICES = [
+        ('scheduled',
+         u'рассылка поставлена очередь и будет отправлена, как только наступит '
+         u'время'),
+        ('censor_hold',
+         u'рассмотрена администратором, но отложена для дальнейшей проверки'),
+        ('waits_censor', u'рассылка ожидает проверки администратором.'),
+        ('waits_schedule',
+         u'задача на отправку рассылки запомнена системой и будет обработана'),
+        ('declined', u'рассылка отклонена администратором'),
+        ('in_progress', u'рассылка выполняется'),
+        ('analysed', u'все сообщения отправлены, идёт анализ результатов'),
+        ('completed', u'все сообщения отправлены и анализ результатов закончен'),
+        ('stopped', u'рассылка поставлена "на паузу"'),
+        ('canceled',
+         u'рассылка отменена (обычно из-за нехватки денег или по желанию пользователя)'),
+    ]
     name = models.CharField(_(u'Название рассылки'), max_length=255)
     email_message = models.ForeignKey(EmailMessage, verbose_name=u'Сообщение')
     start_time = models.DateTimeField(
@@ -569,70 +585,6 @@ class Campaign(UnisenderModel):
     payment_limit = models.PositiveSmallIntegerField(
         _(u'ограничить бюджет рассылки'), blank=True, null=True)
 
-    unisender = UnisenderCampaignManager()
-
-    def serrialize_contacts(self):
-        return ','.join(str(x) for x in self.contacts.all().values_list(
-            'contact', flat=True))
-
-    def create_campaign(self):
-        '''
-        http://www.unisender.com/ru/help/api/createCampaign/
-        '''
-        params = {'message_id ': self.email_message.unisender_id,
-                  'track_read': self.track_read,
-                  'track_links ': self.track_links,
-                  'contacts': self.serrialize_contacts(),
-                  'defer': 1,
-                  'track_ga ': self.track_ga}
-        if self.start_time:
-            params['start_time'] = self.start_time
-        if self.payment_limit:
-            params['payment_limit'] = self.payment_limit
-
-        api = self.get_api()
-        responce = api.createCampaign(
-            params=params)
-        result = responce.get('result')
-        error = responce.get('error')
-        warning = responce.get('warning')
-        if result:
-            return result
-        if error:
-            # TODO last errors
-            pass
-        if warning:
-            # TODO last warnings
-            pass
-
-    def __unicode__(self):
-        return unicode(self.name)
-
-    class Meta:
-        ordering = ('name',)
-        verbose_name = _(u'Рассылка')
-        verbose_name_plural = _(u'Рассылки')
-
-
-class CampaignStatus(UnisenderModel):
-    STATUS_CHOICES = [
-        ('scheduled',
-         u'рассылка поставлена очередь и будет отправлена, как только наступит '
-         u'время'),
-        ('censor_hold',
-         u'рассмотрена администратором, но отложена для дальнейшей проверки'),
-        ('waits_censor', u'рассылка ожидает проверки администратором.'),
-        ('waits_schedule',
-         u'задача на отправку рассылки запомнена системой и будет обработана'),
-        ('declined', u'рассылка отклонена администратором'),
-        ('in_progress', u'рассылка выполняется'),
-        ('analysed', u'все сообщения отправлены, идёт анализ результатов'),
-        ('completed', u'все сообщения отправлены и анализ результатов закончен'),
-        ('stopped', u'рассылка поставлена "на паузу"'),
-        ('canceled',
-         u'рассылка отменена (обычно из-за нехватки денег или по желанию пользователя)'),
-    ]
-    campaign = models.ForeignKey(EmailMessage, verbose_name=u'Рассылка')
     status = models.CharField(
         _(u'статус рассылки'), max_length=50, choices=STATUS_CHOICES,
         default=None, blank=True, null=True)
@@ -724,6 +676,9 @@ class CampaignStatus(UnisenderModel):
         _(u'внутренний сбой, при котором переотправка письма отправителем не должна осуществляться'),
         default=0)
 
+    unisender = UnisenderCampaignManager()
+
+
     def get_error_count(self):
         result = 0
         err_fields = ['err_user_unknown', 'err_user_inactive',
@@ -769,13 +724,48 @@ class CampaignStatus(UnisenderModel):
         '''
         pass
 
+
+    def serrialize_contacts(self):
+        return ','.join(str(x) for x in self.contacts.all().values_list(
+            'contact', flat=True))
+
+    def create_campaign(self):
+        '''
+        http://www.unisender.com/ru/help/api/createCampaign/
+        '''
+        params = {'message_id ': self.email_message.unisender_id,
+                  'track_read': self.track_read,
+                  'track_links ': self.track_links,
+                  'contacts': self.serrialize_contacts(),
+                  'defer': 1,
+                  'track_ga ': self.track_ga}
+        if self.start_time:
+            params['start_time'] = self.start_time
+        if self.payment_limit:
+            params['payment_limit'] = self.payment_limit
+
+        api = self.get_api()
+        responce = api.createCampaign(
+            params=params)
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if result:
+            return result
+        if error:
+            # TODO last errors
+            pass
+        if warning:
+            # TODO last warnings
+            pass
+
     def __unicode__(self):
-        return unicode(self.campaign)
+        return unicode(self.name)
 
     class Meta:
-        ordering = ('campaign',)
-        verbose_name = _(u'Статусы рассылки')
-        verbose_name_plural = _(u'Статусы рассылки')
+        ordering = ('name',)
+        verbose_name = _(u'Рассылка')
+        verbose_name_plural = _(u'Рассылки')
 
 # TODO
 #  http://www.unisender.com/ru/help/api/sendEmail/

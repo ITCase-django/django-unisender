@@ -3,7 +3,7 @@ from django.contrib import admin
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
-    EmailMessage, SmsMessage, Campaign, CampaignStatus)
+    EmailMessage, SmsMessage, Campaign)
 
 unisender_fieldsets = [
     [u'Unisender', {
@@ -117,31 +117,31 @@ class CampaignAdmin(UnisenderAdmin):
 
 admin.site.register(Campaign, CampaignAdmin)
 
+# model deleted need custom view
+# class CampaignStatusAdmin(UnisenderAdmin):
+#     fieldsets = unisender_fieldsets + [
+#         (u'Статус', {
+#             'fields': ['campaign', 'status', 'start_time',]
+#         }),
+#         (u'Краткая информация', {
+#             'fields': ['get_error_count', 'get_success_count' ]
+#         }),
+#         (u'Подробная информация', {
+#             'fields': ['not_sent', 'ok_delivered', 'ok_read',
+#                        'ok_spam_folder', 'ok_link_visited', 'ok_unsubscribed',
+#                        'err_user_unknown', 'err_user_inactive',
+#                        'err_mailbox_full', 'err_spam_rejected',
+#                        'err_spam_folder', 'err_delivery_failed',
+#                        'err_will_retry', 'err_resend', 'err_domain_inactive',
+#                        'err_skip_letter', 'err_spam_retry', 'err_unsubscribed',
+#                        'err_src_invalid', 'err_dest_invalid', 'err_not_allowed',
+#                        'err_not_available', 'err_lost', 'err_internal', ]
+#         })]
 
-class CampaignStatusAdmin(UnisenderAdmin):
-    fieldsets = unisender_fieldsets + [
-        (u'Статус', {
-            'fields': ['campaign', 'status', 'start_time',]
-        }),
-        (u'Краткая информация', {
-            'fields': ['get_error_count', 'get_success_count' ]
-        }),
-        (u'Подробная информация', {
-            'fields': ['not_sent', 'ok_delivered', 'ok_read',
-                       'ok_spam_folder', 'ok_link_visited', 'ok_unsubscribed',
-                       'err_user_unknown', 'err_user_inactive',
-                       'err_mailbox_full', 'err_spam_rejected',
-                       'err_spam_folder', 'err_delivery_failed',
-                       'err_will_retry', 'err_resend', 'err_domain_inactive',
-                       'err_skip_letter', 'err_spam_retry', 'err_unsubscribed',
-                       'err_src_invalid', 'err_dest_invalid', 'err_not_allowed',
-                       'err_not_available', 'err_lost', 'err_internal', ]
-        })]
-
-    list_display = (
-        '__unicode__', 'status', 'campaign', 'get_error_count',
-        'get_success_count', 'unisender_id', 'sync')
-    list_display_links = ('__unicode__', )
-    search_fields = ['campaign', 'status', ]
-    readonly_fields = ['get_error_count', 'get_success_count', 'unisender_id', 'sync']
-admin.site.register(CampaignStatus, CampaignStatusAdmin)
+#     list_display = (
+#         '__unicode__', 'status', 'campaign', 'get_error_count',
+#         'get_success_count', 'unisender_id', 'sync')
+#     list_display_links = ('__unicode__', )
+#     search_fields = ['campaign', 'status', ]
+#     readonly_fields = ['get_error_count', 'get_success_count', 'unisender_id', 'sync']
+# admin.site.register(CampaignStatus, CampaignStatusAdmin)
