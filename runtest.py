@@ -3,10 +3,7 @@
 
 import os
 import sys
-import coverage
 from django.conf import settings
-from django.test.simple import DjangoTestSuiteRunner
-
 
 PROJECT_DIR = os.path.dirname(os.path.realpath(__file__))
 APPS_PATH = os.path.join(PROJECT_DIR, 'itcase')
@@ -46,6 +43,7 @@ settings.configure(DEBUG=True,
                     ),
                    )
 
+from django.test.simple import DjangoTestSuiteRunner
 test_runner = DjangoTestSuiteRunner(verbosity=1)
 failures = test_runner.run_tests(['unisender', ])
 if failures:
