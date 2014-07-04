@@ -12,4 +12,9 @@ install:
   - pip install git+git://github.com/ITCase/django-tinymce-4 
 
 script:
-  python runtest.py 
+
+script:
+  coverage run --source=unisender runtest.py
+
+after_success:
+  coveralls
