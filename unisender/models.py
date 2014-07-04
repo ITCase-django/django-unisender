@@ -323,7 +323,6 @@ class Subscriber(UnisenderModel):
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
-
         if result:
             self.sync = True
             self.last_error = None
@@ -588,7 +587,7 @@ class Campaign(UnisenderModel):
     status = models.CharField(
         _(u'статус рассылки'), max_length=50, choices=STATUS_CHOICES,
         default=None, blank=True, null=True)
-    start_time = models.DateTimeField(
+    last_check = models.DateTimeField(
         _(u'Дата и время последней проверки'), blank=True, null=True)
     not_sent = models.PositiveSmallIntegerField(
         _(u'Сообщение еще не было обработано'),
@@ -733,28 +732,28 @@ class Campaign(UnisenderModel):
         '''
         http://www.unisender.com/ru/help/api/createCampaign/
         '''
-        params = {'message_id ': self.email_message.unisender_id,
+        params = {'message_id': self.email_message.unisender_id,
                   'track_read': self.track_read,
-                  'track_links ': self.track_links,
+                  'track_links': self.track_links,
                   'contacts': self.serrialize_contacts(),
                   'defer': 1,
-                  'track_ga ': self.track_ga}
+                  'track_ga': self.track_ga}
         if self.start_time:
             params['start_time'] = self.start_time
         if self.payment_limit:
             params['payment_limit'] = self.payment_limit
 
         api = self.get_api()
-        responce = api.createCampaign(
-            params=params)
+        responce = api.createCampaign(**params)
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
         if result:
-            return result
+            self.last_error = None
+            self.sync = True
+            return result['campaign_id']
         if error:
-            # TODO last errors
-            pass
+            self.last_error = error
         if warning:
             # TODO last warnings
             pass

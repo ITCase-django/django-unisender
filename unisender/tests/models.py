@@ -171,9 +171,7 @@ class CampaignTestCase(TestCase):
 
     @patch.object(Campaign, 'get_api', unisender_test_api)
     def test__create_campaign(self):
-        self.assertDictEqual(
-            self.campaign.create_campaign(),
-            {'campaign_id': 1, 'status': 'scheduled', 'count': 2})
+        self.assertEquals(self.campaign.create_campaign(), 1)
 
     def test__get_success_count(self):
         pass
