@@ -13,3 +13,6 @@ install:
 
 script:
   python runtest.py 
+
+after_success:
+  coveralls
