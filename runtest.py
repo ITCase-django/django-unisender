@@ -70,6 +70,7 @@ settings.configure(DEBUG=True,
                         'django.contrib.messages.context_processors.messages',
                         'django.core.context_processors.request',
                     ),
+                    COVERAGE_MODULES = ['unisender',],
                    )
 
 test_runner = CoverageRunner(verbosity=1)
