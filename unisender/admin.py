@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
 from django.conf.urls import patterns, url
+from django.contrib import messages
+from django.utils.translation import ugettext_lazy as _
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
-    EmailMessage, SmsMessage, Campaign)
+    EmailMessage, Campaign)
 
 from unisender.views import GetCampaignStatistic
 
@@ -243,5 +245,17 @@ class CampaignAdmin(UnisenderAdmin):
              ),
         )
         return my_urls + urls
+
+
+    def save_model(self, request, obj, form, change):
+        obj.save()
+        if not obj.unisender_id:
+            obj.unisender_id = obj.create_campaign(request)
+        obj.save()
+
+    def delete_model(self, request, obj):
+        messages.warning(
+            request, _(u'Объект был удален из БД сайта, но остался в БД unisender вам необходимо удалить его самостоятельно оттуда'))
+        obj.delete()
 
 admin.site.register(Campaign, CampaignAdmin)

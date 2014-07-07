@@ -755,7 +755,7 @@ class Campaign(UnisenderModel):
             result += getattr(self, item, 0)
         return result
 
-    get_success_count.short_description = u'Общее количество успешнодоставленных сообщений'
+    get_success_count.short_description = u'Общее количество успешно доставленных сообщений'
 
     def get_campaign_status(self, request=None):
         '''
