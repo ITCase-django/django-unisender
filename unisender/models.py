@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # python imports
+import logging
 from datetime import datetime
 
 # django imports
@@ -21,6 +22,9 @@ from unisender.managers import (
     UnisenderCampaignManager)
 
 test_mode = 1 if UNISENDER_TEST_MODE else 0
+
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
 
 
 class UnisenderModel(models.Model):
@@ -53,6 +57,7 @@ class UnisenderModel(models.Model):
     def log_warning(self, msg, request=None):
         if request:
             messages.warning(request, _(u'Сообщение при синхронизации с unisender: %s' % msg))
+        logger.info(unicode(_(u'Сообщение при синхронизации с unisender: %s' % msg)))
 
     def success_message(self, message, request=None):
         if request:
@@ -64,6 +69,7 @@ class UnisenderModel(models.Model):
             messages.error(
                 request,
                 _(u'При синхронизации с unisender проиошла ошибка: %s' % last_error))
+        logger.error(unicode(_(u'При синхронизации с unisender проиошла ошибка: %s' % last_error)))
 
     class Meta:
         abstract = True
