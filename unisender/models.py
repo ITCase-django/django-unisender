@@ -527,6 +527,10 @@ class EmailMessage(MessageModel):
         _(u'Время отправки для автоматически рассылаемого письма'),
         default=datetime.now())
 
+    def reaad_only_body(self):
+        return self.body
+    reaad_only_body.allow_tags = True
+
     def create_email_message(self, request=None):
         '''
         создать сообщение электронной почты

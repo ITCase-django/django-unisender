@@ -118,27 +118,58 @@ class SubscriberAdmin(UnisenderAdmin):
 
 admin.site.register(Subscriber, SubscriberAdmin)
 
+auto_send_fieldset = [[u'Автоматическая отправка', {
+            'fields': ['series_day', 'series_time', ]
+        }]]
 
 class EmailMessageAdmin(UnisenderAdmin):
     fieldsets = unisender_fieldsets + [
-        (u'Сообщение', {
+        [u'Сообщение', {
             'fields': ['sender_name', 'sender_email', 'subject', 'body', 'list_id',
                        'lang', 'text_body', 'generate_text', 'wrap_type',
                        'categories', 'tag']
-        }),
-        (u'Автоматическая отправка', {
-            'fields': ['series_day', 'series_time', ]
-        })]
+        }]] + auto_send_fieldset
 
     list_display = (
         '__unicode__', 'sender_name', 'subject', 'unisender_id', 'sync')
     list_display_links = ('__unicode__', )
     search_fields = ['sender_name', 'subject', 'body', ]
 
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.sync:
+            result = list(set(
+                [field.name for field in self.opts.local_fields] +
+                [field.name for field in self.opts.local_many_to_many]
+            ))
+            result += ['get_last_error']
+            result += ['reaad_only_body']
+            return result
+        return super(EmailMessageAdmin, self).get_readonly_fields(request, obj=None)
+
+    def get_fieldsets(self, request, obj=None):
+        field_sets = super(EmailMessageAdmin, self).get_fieldsets(request, obj=None)
+        if obj and obj.unisender_id:
+            field_sets = unisender_fieldsets + [
+            [u'Сообщение', {
+                'fields': ['sender_name', 'sender_email', 'subject',
+                           'reaad_only_body', 'list_id', 'lang', 'text_body',
+                           'generate_text', 'wrap_type', 'categories', 'tag']
+            }]] + auto_send_fieldset
+        return field_sets
+
+    def save_model(self, request, obj, form, change):
+        if not obj.unisender_id:
+            obj.unisender_id = obj.create_email_message(request)
+        obj.save()
+
+    def delete_model(self, request, obj):
+        obj.delete_message(request)
+        obj.delete()
+
 admin.site.register(EmailMessage, EmailMessageAdmin)
 
 
-admin.site.register(SmsMessage)
+# admin.site.register(SmsMessage)
 
 
 class CampaignAdmin(UnisenderAdmin):
