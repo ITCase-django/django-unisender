@@ -2,3 +2,4 @@
 
 from managers import *
 from models import *
+from admin import *

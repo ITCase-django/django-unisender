@@ -233,3 +233,8 @@ def unisender_test_api_correct_values(UnisenderModel):
             return {}
 
     return UnisenderMockAPI()
+
+def unisender_test_empty_api(UnisenderModel):
+    class UnisenderMockAPI(object):
+        pass
+    return UnisenderMockAPI()
