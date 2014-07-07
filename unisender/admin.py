@@ -106,6 +106,16 @@ class SubscriberAdmin(UnisenderAdmin):
     filter_horizontal = ['list_ids', 'tags']
     inlines = [SubscriberFieldsInline]
 
+    def get_readonly_fields(self, request, obj=None):
+        readonly_fields = super(SubscriberAdmin, self).get_readonly_fields(request, obj=None)
+        if obj and obj.sync:
+            readonly_fields += ('contact', 'contact_type')
+        return readonly_fields
+
+    def delete_model(self, request, obj):
+        obj.exclude(request)
+        obj.delete()
+
 admin.site.register(Subscriber, SubscriberAdmin)
 
 

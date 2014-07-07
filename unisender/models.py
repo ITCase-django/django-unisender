@@ -397,12 +397,13 @@ class Subscriber(UnisenderModel):
             self.last_error = error
             self.log_error(request)
 
-    def exclude(self, request=None):
+    def exclude(self, request=None, exclude_list=None, show_success_message=None):
         '''
         убрать подписчика
         http://www.unisender.com/ru/help/api/exclude/
         '''
         api = self.get_api()
+        list_ids = exclude_list if exclude_list else self.serialize_list_id()
         responce = api.exclude(
             contact=self.contact,
             list_ids=self.serialize_list_id(), contact_type=self.contact_type)
@@ -411,14 +412,14 @@ class Subscriber(UnisenderModel):
         warning = responce.get('warning')
         if warning:
             self.log_warning(warning, request)
-        if result:
-            self.success_message(_(
-                u'''Подписчик %s успешно синхронизирован
-                    с unisender''' % self.contact), request=request)
-            return result['id']
         if error:
             self.last_error = error
             self.log_error(request)
+            return
+        if show_success_message:
+            self.success_message(
+                _(u'Подписчик %s успешно отписан из списков БД unisender' % self.contact),
+                request=request)
 
     def __unicode__(self):
         return unicode(self.contact)
