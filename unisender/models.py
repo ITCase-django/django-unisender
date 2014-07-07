@@ -224,7 +224,7 @@ class SubscribeList(UnisenderModel):
         if warning:
             self.log_warning(warning, request)
         if error:
-            self.log_error(request)
+            self.log_error(request, error)
             self.log_warning(
                 _(u'''Не удалось удалить список рассылки из БД unisender,
                       вам необходимо удалить его самостоятельно'''), request)
