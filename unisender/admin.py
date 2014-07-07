@@ -44,6 +44,19 @@ class FieldAdmin(UnisenderAdmin):
     search_fields = ['name', ]
     list_editable = ('field_type', 'visible', 'sort')
 
+    actions = ['delete_selected_fields']
+
+    def get_actions(self, request):
+        actions = super(FieldAdmin, self).get_actions(request)
+        del actions['delete_selected']
+        return actions
+
+    def delete_selected_fields(self, request, queryset):
+        for item in queryset:
+            item.delete_field(request)
+            item.delete()
+    delete_selected_fields.short_description = u'Удалить выбранные Поля'
+
     def save_model(self, request, obj, form, change):
         if obj.pk:
             if obj.unisender_id:
@@ -82,6 +95,19 @@ class SubscribeListAdmin(UnisenderAdmin):
             obj.unisender_id = obj.create_list(request)
         obj.save()
 
+    actions = ['delete_selected_subscribe_list']
+
+    def get_actions(self, request):
+        actions = super(SubscribeListAdmin, self).get_actions(request)
+        del actions['delete_selected']
+        return actions
+
+    def delete_selected_subscribe_list(self, request, queryset):
+        for item in queryset:
+            item.delete_list(request)
+            item.delete()
+    delete_selected_subscribe_list.short_description = u'Удалить выбранные Списки подписчиков'
+
     def delete_model(self, request, obj):
         obj.delete_list(request)
         obj.delete()
@@ -119,6 +145,19 @@ class SubscriberAdmin(UnisenderAdmin):
         if not obj.unisender_id:
             obj.unisender_id = obj.subscribe(request)
         obj.save()
+
+    actions = ['delete_selected_subscribers']
+
+    def get_actions(self, request):
+        actions = super(SubscriberAdmin, self).get_actions(request)
+        del actions['delete_selected']
+        return actions
+
+    def delete_selected_subscribers(self, request, queryset):
+        for item in queryset:
+            item.exclude(request)
+            item.delete()
+    delete_selected_subscribers.short_description = u'Удалить выбранных Подписчиков'
 
     def delete_model(self, request, obj):
         obj.exclude(request)
@@ -169,6 +208,19 @@ class EmailMessageAdmin(UnisenderAdmin):
         if not obj.unisender_id:
             obj.unisender_id = obj.create_email_message(request)
         obj.save()
+
+    actions = ['delete_selected_emails']
+
+    def get_actions(self, request):
+        actions = super(EmailMessageAdmin, self).get_actions(request)
+        del actions['delete_selected']
+        return actions
+
+    def delete_selected_emails(self, request, queryset):
+        for item in queryset:
+            item.delete_message(request)
+            item.delete()
+    delete_selected_emails.short_description = u'Удалить выбранные сообщения электронной почты'
 
     def delete_model(self, request, obj):
         obj.delete_message(request)
@@ -258,6 +310,21 @@ class CampaignAdmin(UnisenderAdmin):
         if not obj.unisender_id:
             obj.unisender_id = obj.create_campaign(request)
         obj.save()
+
+    actions = ['delete_selected_campaigns']
+
+    def get_actions(self, request):
+        actions = super(CampaignAdmin, self).get_actions(request)
+        del actions['delete_selected']
+        return actions
+
+    def delete_selected_campaigns(self, request, queryset):
+        for item in queryset:
+            messages.warning(
+                request,
+                _(u'Объект был удален из БД сайта, но остался в БД unisender вам необходимо удалить его самостоятельно оттуда'))
+            item.delete()
+    delete_selected_campaigns.short_description = u'Удалить выбранные Поля'
 
     def delete_model(self, request, obj):
         messages.warning(
