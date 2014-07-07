@@ -114,6 +114,12 @@ class SubscriberAdmin(UnisenderAdmin):
             readonly_fields += ('contact', 'contact_type')
         return readonly_fields
 
+    def save_model(self, request, obj, form, change):
+        obj.save()
+        if not obj.unisender_id:
+            obj.unisender_id = obj.subscribe(request)
+        obj.save()
+
     def delete_model(self, request, obj):
         obj.exclude(request)
         obj.delete()
