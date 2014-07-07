@@ -12,7 +12,7 @@ from unisender.models import (
     EmailMessage, Campaign,)
 
 from unisender.admin import (
-    FieldAdmin, SubscribeListAdmin
+    FieldAdmin, SubscribeListAdmin, SubscriberAdmin
     )
 
 from .mock_api import unisender_test_empty_api
@@ -178,7 +178,6 @@ class FieldAdminTestCase(TestCase):
         self.assertEqual(len(actions.keys()), 1)
         self.assertIn('delete_selected_fields', actions)
 
-    @patch.object(Field, 'get_api', unisender_test_empty_api)
     def test_delete_selected_fields(self):
         start_unisender_count = Field.objects.count()
         Field.delete_field = Mock(return_value=None)
@@ -190,7 +189,6 @@ class FieldAdminTestCase(TestCase):
         self.assertEqual(Field.delete_field.call_count, 3)
         self.assertEqual(Field.objects.count(), start_unisender_count)
 
-    @patch.object(Field, 'get_api', unisender_test_empty_api)
     def test_save_model(self):
         start_unisender_count = Field.objects.count()
         field = Field.objects.create(name='test', unisender_id=1)
@@ -206,7 +204,6 @@ class FieldAdminTestCase(TestCase):
         self.assertTrue(field_2.create_field.called)
         self.assertEqual(field_2.create_field.call_count, 1)
 
-    @patch.object(Field, 'get_api', unisender_test_empty_api)
     def test_delete_model(self):
         start_unisender_count = Field.objects.count()
         field = Field.objects.create(name='test')
@@ -287,7 +284,6 @@ class SubscribeListAdminTestCase(TestCase):
         self.assertEqual(len(actions.keys()), 1)
         self.assertIn('delete_selected_subscribe_list', actions)
 
-    @patch.object(SubscribeList, 'get_api', unisender_test_empty_api)
     def test_delete_selected_lists(self):
         start_unisender_count = SubscribeList.objects.count()
         SubscribeList.delete_list = Mock(return_value=None)
@@ -299,7 +295,6 @@ class SubscribeListAdminTestCase(TestCase):
         self.assertEqual(SubscribeList.delete_list.call_count, 3)
         self.assertEqual(SubscribeList.objects.count(), start_unisender_count)
 
-    @patch.object(SubscribeList, 'get_api', unisender_test_empty_api)
     def test_save_model(self):
         start_unisender_count = SubscribeList.objects.count()
         subscribe_list = SubscribeList.objects.create(title='test', unisender_id=1)
@@ -315,7 +310,6 @@ class SubscribeListAdminTestCase(TestCase):
         self.assertTrue(subscribe_list_2.create_list.called)
         self.assertEqual(subscribe_list_2.create_list.call_count, 1)
 
-    @patch.object(SubscribeList, 'get_api', unisender_test_empty_api)
     def test_delete_model(self):
         start_unisender_count = SubscribeList.objects.count()
         subscribe_list = SubscribeList.objects.create(title='test')
@@ -324,3 +318,117 @@ class SubscribeListAdminTestCase(TestCase):
         self.assertEqual(SubscribeList.objects.count(), start_unisender_count)
         self.assertTrue(subscribe_list.delete_list.called)
         self.assertEqual(subscribe_list.delete_list.call_count, 1)
+
+
+class SubscriberAdminTestCase(TestCase):
+
+    def setUp(self):
+        username = 'test_user'
+        pwd = 'secret'
+
+        self.user = User.objects.create_user(username, '', pwd)
+        self.user.is_staff = True
+        self.user.is_superuser = True
+        self.user.save()
+        self.assertTrue(self.client.login(username=username, password=pwd),
+                        "Logging in user %s, pwd %s failed." % (username, pwd))
+        site = AdminSite()
+        self.admin = SubscriberAdmin(Subscriber, site)
+        self.request = RequestFactory().get(reverse('admin:index'))
+
+
+    def test_open_unisender_page(self):
+        """Открываем страницу подписчиков в админке"""
+        response = self.client.get(
+            reverse('admin:unisender_subscriber_changelist'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_add_subscribe_list(self):
+        """Добавляем подписчика через админку"""
+        start_subscriber_count = Subscriber.objects.count()
+        url = reverse('admin:unisender_subscriber_add')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        csrf = get_csrf_token(response)
+        subscribe_list = SubscribeList.objects.create(title='test')
+        post_data = {'list_ids': subscribe_list.pk,
+                     'csrfmiddlewaretoken': csrf,
+                     'contact_type': 'email',
+                     'contact': 'email@example.com',
+                     'fields-TOTAL_FORMS': 0,
+                     'fields-INITIAL_FORMS': 0,
+                     'fields-MAX_NUM_FORMS': 1000,
+                     'double_optin': 1,
+                     }
+        response = self.client.post(url, post_data)
+        self.assertRedirects(response, reverse('admin:unisender_subscriber_changelist'))
+        self.assertEqual(Subscriber.objects.count(), start_subscriber_count + 1)
+
+    def test_update_subscribe_list(self):
+        """Редактируем получателя"""
+        subscriber = Subscriber.objects.create(contact='email@example.com')
+        url = reverse('admin:unisender_subscriber_change', args=(subscriber.pk,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        csrf = get_csrf_token(response)
+        subscribe_list = SubscribeList.objects.create(title='test')
+        post_data = {'list_ids': subscribe_list.pk,
+                     'csrfmiddlewaretoken': csrf,
+                     'contact_type': 'email',
+                     'contact': 'email@example.com',
+                     'fields-TOTAL_FORMS': 0,
+                     'fields-INITIAL_FORMS': 0,
+                     'fields-MAX_NUM_FORMS': 1000,
+                     'double_optin': 1,
+                     }
+        response = self.client.post(url, post_data)
+        self.assertRedirects(response, reverse('admin:unisender_subscriber_changelist'))
+        self.assertTrue(Subscriber.objects.filter(contact='email@example.com').exists())
+
+    def test_delete_subscribe_list(self):
+        """Удаляем получателя"""
+        start_unisender_count = Subscriber.objects.count()
+        subscriber = Subscriber.objects.create(contact='email@example.com')
+        url = reverse('admin:unisender_subscriber_delete', args=(subscriber.pk,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        csrf = get_csrf_token(response)
+        post_data = {'csrfmiddlewaretoken': csrf}
+        response = self.client.post(url, post_data)
+        self.assertRedirects(
+            response, reverse('admin:unisender_subscriber_changelist'))
+        self.assertEqual(Subscriber.objects.count(), start_unisender_count)
+
+    def test_admin_get_actions(self):
+        actions = self.admin.get_actions(self.request)
+        self.assertEqual(len(actions.keys()), 1)
+        self.assertIn('delete_selected_subscribers', actions)
+
+    def test_delete_selected_subscribers(self):
+        start_unisender_count = Subscriber.objects.count()
+        Subscriber.exclude = Mock(return_value=None)
+        for x in xrange(3):
+            Subscriber.objects.create(contact='email@example.com')
+        queryset = Subscriber.objects.all()
+        self.admin.delete_selected_subscribers(self.request, queryset)
+        self.assertTrue(Subscriber.exclude.called)
+        self.assertEqual(Subscriber.exclude.call_count, 3)
+        self.assertEqual(Subscriber.objects.count(), start_unisender_count)
+
+    def test_save_model(self):
+        start_unisender_count = Subscriber.objects.count()
+        subscriber = Subscriber.objects.create(contact='email@example.com')
+        subscriber.subscribe = Mock(return_value=None)
+        self.admin.save_model(self.request, subscriber, None, None)
+        self.assertEqual(Subscriber.objects.count(), start_unisender_count + 1)
+        self.assertTrue(subscriber.subscribe.called)
+        self.assertEqual(subscriber.subscribe.call_count, 1)
+
+    def test_delete_model(self):
+        start_unisender_count = Subscriber.objects.count()
+        subscriber = Subscriber.objects.create(contact='email@example.com')
+        subscriber.exclude = Mock(return_value=None)
+        self.admin.delete_model(self.request, subscriber)
+        self.assertEqual(Subscriber.objects.count(), start_unisender_count)
+        self.assertTrue(subscriber.exclude.called)
+        self.assertEqual(subscriber.exclude.call_count, 1)

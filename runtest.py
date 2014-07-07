@@ -46,6 +46,8 @@ settings.configure(DEBUG=True,
 
 from django.test.runner import DiscoverRunner
 test_runner = DiscoverRunner(pattern='*.py', failfast=False)
-failures = test_runner.run_tests(['unisender.tests',])
+failures = test_runner.run_tests(['unisender.tests.models',])
+failures += test_runner.run_tests(['unisender.tests.admin',])
+failures += test_runner.run_tests(['unisender.tests.managers',])
 if failures:
     sys.exit(failures)
