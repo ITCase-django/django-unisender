@@ -9,7 +9,9 @@ from unisender.models import (
 
 
 from unisender.error_codes import UNISENDER_COMMON_ERRORS
-from .mock_api import unisender_test_api, unisender_test_api_errors
+from .mock_api import (
+    unisender_test_api, unisender_test_api_errors,
+    unisender_test_api_correct_values)
 
 
 class FieldModelTestCase(TestCase):
@@ -56,6 +58,18 @@ class FieldModelTestCase(TestCase):
         self.assertEquals(self.field.delete_field(), None)
         # TODO test logging
 
+    @patch.object(Field, 'get_api', unisender_test_api_correct_values)
+    def test__create_field_correct_values(self):
+        self.field.create_field()
+
+    @patch.object(Field, 'get_api', unisender_test_api_correct_values)
+    def test__update_field_error_correct_values(self):
+        self.field.update_field()
+
+    @patch.object(Field, 'get_api', unisender_test_api_correct_values)
+    def test__delete_field_error_correct_values(self):
+        self.field.delete_field()
+
 
 class SubscribeListTestCase(TestCase):
 
@@ -90,6 +104,18 @@ class SubscribeListTestCase(TestCase):
         self.assertIsNone(self.list.create_list())
         self.assertEquals(
             UNISENDER_COMMON_ERRORS['invalid_arg'], self.list.get_last_error())
+
+    @patch.object(SubscribeList, 'get_api', unisender_test_api_correct_values)
+    def test__delete_list_correct_values(self):
+        self.list.delete_list()
+
+    @patch.object(SubscribeList, 'get_api', unisender_test_api_correct_values)
+    def test__update_list_correct_values(self):
+        self.list.update_list()
+
+    @patch.object(SubscribeList, 'get_api', unisender_test_api_correct_values)
+    def test__create_list_correct_values(self):
+        self.list.create_list()
 
 
 class SubscriberTestCase(TestCase):
@@ -178,6 +204,20 @@ class SubscriberTestCase(TestCase):
         self.assertEquals(
             UNISENDER_COMMON_ERRORS['invalid_arg'], subscriber.get_last_error())
 
+    @patch.object(Subscriber, 'get_api', unisender_test_api_correct_values)
+    def test__subscribe_correct_values(self):
+        subscriber = Subscriber.objects.create(contact='mail@example.com')
+        subscriber.subscribe()
+
+    @patch.object(Subscriber, 'get_api', unisender_test_api_correct_values)
+    def test__unsubscribe_correct_values(self):
+        subscriber = Subscriber.objects.create(contact='mail@example.com')
+        subscriber.unsubscribe()
+
+    @patch.object(Subscriber, 'get_api', unisender_test_api_correct_values)
+    def test__exclude_correct_values(self):
+        subscriber = Subscriber.objects.create(contact='mail@example.com')
+        subscriber.exclude()
 
 class EmailMessageTestCase(TestCase):
 
@@ -208,6 +248,15 @@ class EmailMessageTestCase(TestCase):
             UNISENDER_COMMON_ERRORS['invalid_arg'],
             self.message.get_last_error())
 
+    @patch.object(EmailMessage, 'get_api', unisender_test_api_correct_values)
+    def test__delete_message_correct_values(self):
+        self.message.delete_message()
+
+    @patch.object(EmailMessage, 'get_api', unisender_test_api_correct_values)
+    def test__create_email_message_correct_values(self):
+        self.message.create_email_message()
+
+
 class CampaignTestCase(TestCase):
 
     def setUp(self):
@@ -232,6 +281,10 @@ class CampaignTestCase(TestCase):
     @patch.object(Campaign, 'get_api', unisender_test_api)
     def test__create_campaign(self):
         self.assertEquals(self.campaign.create_campaign(), 1)
+
+    @patch.object(Campaign, 'get_api', unisender_test_api_correct_values)
+    def test__create_campaign_correct_values(self):
+        self.campaign.create_campaign()
 
     @patch.object(Campaign, 'get_api', unisender_test_api_errors)
     def test__create_campaign_error(self):
@@ -279,6 +332,10 @@ class CampaignTestCase(TestCase):
         self.assertEquals(self.campaign.creation_time, '2011-09-21 19:47:31')
         self.assertEquals(self.campaign.start_time, '2011-09-21 20:00:00')
 
+    @patch.object(Campaign, 'get_api', unisender_test_api_correct_values)
+    def test__get_campaign_status_correct_values(self):
+        self.campaign.get_campaign_status()
+
     @patch.object(Campaign, 'get_api', unisender_test_api_errors)
     def test__get_campaign_status_error(self):
         self.campaign.get_campaign_status()
@@ -299,6 +356,11 @@ class CampaignTestCase(TestCase):
         self.assertEquals(
             UNISENDER_COMMON_ERRORS['invalid_arg'],
             self.campaign.get_last_error())
+
+    @patch.object(Campaign, 'get_api', unisender_test_api_correct_values)
+    def test__get_campaign_agregate_status_correct_values(self):
+        self.campaign.get_campaign_agregate_status()
+
 
     def test__get_visited_links(self):
         # issue 23 делаем потом

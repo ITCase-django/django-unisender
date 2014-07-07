@@ -22,6 +22,7 @@ from unisender.managers import (
 
 test_mode = 1 if UNISENDER_TEST_MODE else 0
 
+
 class UnisenderModel(models.Model):
     default_error_message = _(u'неизвестная ошибка')
 
@@ -381,8 +382,7 @@ class Subscriber(UnisenderModel):
         api = self.get_api()
         responce = api.unsubscribe(
             list_ids=self.serialize_list_id(),
-            contact_type=self.contact_type, contact=self.contact,
-            double_optin=self.double_optin)
+            contact_type=self.contact_type, contact=self.contact)
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')

@@ -101,3 +101,135 @@ def unisender_test_api_errors(UnisenderModel):
             return self.error_result
 
     return UnisenderMockAPI()
+
+
+def unisender_test_api_correct_values(UnisenderModel):
+
+    class UnisenderMockAPI(object):
+
+        def all_requirement_fields_present(self, requirement_fields, kwargs):
+            for item in requirement_fields:
+                if item not in kwargs:
+                    raise NameError(
+                        'В передаваемых значениях отсутствует обязательное поле < %s >' % item)
+
+        def not_documented_fields_not_present(self, requirement_fields, fields, kwargs):
+            all_fields = requirement_fields + fields
+            for item in kwargs.keys():
+                if item not in all_fields:
+                    raise NameError(
+                        'В передаваемых значениях присутствует поле < %s > котрое не указано в документации' % item)
+
+        def createField(self, **kwargs):
+            requirement_fields = ['name', 'type']
+            fields = ['is_visible', 'view_pos']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, fields, kwargs)
+            return {}
+
+        def updateField(self, **kwargs):
+            requirement_fields = ['id']
+            fields = ['name', 'type', 'is_visible', 'view_pos',]
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, fields, kwargs)
+            return {}
+
+        def deleteField(self, **kwargs):
+            requirement_fields = ['id']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, [], kwargs)
+            return {}
+
+        def deleteList(self, **kwargs):
+            requirement_fields = ['list_id']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, [], kwargs)
+            return {}
+
+        def updateList(self, **kwargs):
+            requirement_fields = ['list_id']
+            fields = ['title', 'before_subscribe_url', 'after_subscribe_url']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, fields, kwargs)
+            return {}
+
+        def createList(self, **kwargs):
+            requirement_fields = ['title']
+            fields = ['before_subscribe_url', 'after_subscribe_url']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, fields, kwargs)
+            return {}
+
+        def subscribe(self, **kwargs):
+            requirement_fields = ['list_ids', 'fields']
+            fields = ['tags', 'request_ip', 'request_time ', 'double_optin',
+                      'confirm_ip', 'confirm_time', 'overwrite']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, fields, kwargs)
+            return {}
+
+        def unsubscribe(self, **kwargs):
+            requirement_fields = ['contact_type', 'contact']
+            fields = ['list_ids']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, fields, kwargs)
+            return {}
+
+        def exclude(self, **kwargs):
+            requirement_fields = ['contact_type', 'contact']
+            fields = ['list_ids']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, fields, kwargs)
+            return {}
+
+        def deleteMessage(self, **kwargs):
+            requirement_fields = ['message_id']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, [], kwargs)
+            return {}
+
+        def createEmailMessage(self, **kwargs):
+            requirement_fields = ['sender_name', 'sender_email', 'subject',
+                                  'body', 'list_id']
+            fields = ['text_body', 'generate_text', 'tag', 'attachments',
+                      'lang', 'series_day', 'series_time', 'wrap_type',
+                      'categories']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, fields, kwargs)
+            return {}
+
+        def createCampaign(self, **kwargs):
+            fields = [
+                'message_id', 'start_time', 'timezone', 'track_read',
+                'track_links', 'contacts', 'contacts_url', 'defer', 'track_ga',
+                'payment_limit', 'payment_currency', 'ga_medium', 'ga_source',
+                'ga_campaign', 'ga_content', 'ga_term']
+            self.not_documented_fields_not_present([], fields, kwargs)
+            return {}
+
+        def getCampaignStatus(self, **kwargs):
+            requirement_fields = ['campaign_id']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, [], kwargs)
+            return {}
+
+        def getCampaignAggregateStats(self, **kwargs):
+            requirement_fields = ['campaign_id']
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, [], kwargs)
+            return {}
+
+    return UnisenderMockAPI()
