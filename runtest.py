@@ -44,8 +44,8 @@ settings.configure(DEBUG=True,
                     ROOT_URLCONF='unisender.tests.test_urlconf'
                    )
 
-from django.test.simple import DjangoTestSuiteRunner
-test_runner = DjangoTestSuiteRunner(verbosity=1)
-failures = test_runner.run_tests(['unisender', ])
+from django.test.runner import DiscoverRunner
+test_runner = DiscoverRunner(pattern='*.py', failfast=False)
+failures = test_runner.run_tests(['unisender.tests',])
 if failures:
     sys.exit(failures)
