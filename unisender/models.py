@@ -356,7 +356,7 @@ class Subscriber(UnisenderModel):
         params = {}
         responce = api.subscribe(
             fields=self.serialize_fields(),
-            list_ids=self.serialize_list_id(),
+            list_ids=self.serialize_list_id(), overwrite=1,
             tags=self.serialize_tags(), double_optin=self.double_optin)
         result = responce.get('result')
         error = responce.get('error')
