@@ -529,6 +529,7 @@ class EmailMessage(MessageModel):
 
     def reaad_only_body(self):
         return self.body
+
     reaad_only_body.allow_tags = True
 
     def create_email_message(self, request=None):
