@@ -41,7 +41,7 @@ settings.configure(DEBUG=True,
                         'django.contrib.messages.context_processors.messages',
                         'django.core.context_processors.request',
                     ),
-                    ROOT_URLCONF='unisender.tests.test_urlconf'
+                    ROOT_URLCONF='unisender.tests.test_urlconf',
                    )
 
 from django.test.runner import DiscoverRunner

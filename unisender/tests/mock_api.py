@@ -238,3 +238,6 @@ def unisender_test_empty_api(UnisenderModel):
     class UnisenderMockAPI(object):
         pass
     return UnisenderMockAPI()
+
+def mock_messages(request, message):
+    return None
