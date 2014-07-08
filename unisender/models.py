@@ -349,7 +349,7 @@ class Subscriber(UnisenderModel):
             result['phone'] = self.contact
         fields = self.fields.all().prefetch_related('field').select_related(
             'value', 'field__name')
-        result.update({item.field.name: item.value for item in fields})
+        result.update({item.field.name: item.value.encode('utf-8') for item in fields})
         return result
 
     def serialize_list_id(self):
@@ -357,7 +357,7 @@ class Subscriber(UnisenderModel):
             'unisender_id', flat=True))
 
     def serialize_tags(self):
-        return ','.join(str(x) for x in self.tags.all().values_list(
+        return u','.join(str(x) for x in self.tags.all().values_list(
             'name', flat=True))
 
     def subscribe(self, request=None):
@@ -561,10 +561,10 @@ class EmailMessage(MessageModel):
         создать сообщение электронной почты
         http://www.unisender.com/ru/help/api/createEmailMessage/
         '''
-        params = {'sender_name': self.sender_name,
+        params = {'sender_name': self.sender_name.encode('utf-8'),
                   'sender_email': self.sender_email,
-                  'subject': self.subject,
-                  'body': self.body,
+                  'subject': self.subject.encode('utf-8'),
+                  'body': self.body.encode('utf-8'),
                   'list_id': self.list_id.unisender_id,
                   'generate_text': self.generate_text,
                   'tag': self.tag,
