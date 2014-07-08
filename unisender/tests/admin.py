@@ -301,6 +301,7 @@ class SubscribeListAdminTestCase(TestCase):
         self.assertEqual(SubscribeList.objects.count(), start_unisender_count + 1)
         self.assertTrue(subscribe_list.update_list.called)
         self.assertEqual(subscribe_list.update_list.call_count, 1)
+
         subscribe_list_2 = SubscribeList.objects.create(title='test_2')
         subscribe_list_2.create_list = Mock(return_value=None)
         self.admin.save_model(self.request, subscribe_list_2, None, None)
