@@ -5,17 +5,15 @@ from django.core.urlresolvers import reverse
 from django.test.client import RequestFactory
 from django.contrib.admin.sites import AdminSite
 
-from mock import patch, Mock
+from mock import Mock
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
     EmailMessage, Campaign,)
 
 from unisender.admin import (
-    FieldAdmin, SubscribeListAdmin, SubscriberAdmin
+    FieldAdmin, SubscribeListAdmin, SubscriberAdmin, EmailMessageAdmin
     )
-
-from .mock_api import unisender_test_empty_api
 
 
 def get_csrf_token(response):
@@ -432,3 +430,180 @@ class SubscriberAdminTestCase(TestCase):
         self.assertEqual(Subscriber.objects.count(), start_unisender_count)
         self.assertTrue(subscriber.exclude.called)
         self.assertEqual(subscriber.exclude.call_count, 1)
+
+class EmailMessageAdminTestCase(TestCase):
+
+    def setUp(self):
+        username = 'test_user'
+        pwd = 'secret'
+
+        self.user = User.objects.create_user(username, '', pwd)
+        self.user.is_staff = True
+        self.user.is_superuser = True
+        self.user.save()
+        self.assertTrue(self.client.login(username=username, password=pwd),
+                        "Logging in user %s, pwd %s failed." % (username, pwd))
+        site = AdminSite()
+        self.admin = EmailMessageAdmin(EmailMessage, site)
+        self.request = RequestFactory().get(reverse('admin:index'))
+
+
+    def test_open_unisender_page(self):
+        """Открываем страницу подписчиков в админке"""
+        response = self.client.get(
+            reverse('admin:unisender_emailmessage_changelist'))
+        self.assertEqual(response.status_code, 200)
+
+    def test_add_subscribe_list(self):
+        """Добавляем email сообщение через админку"""
+        start_subscriber_count = EmailMessage.objects.count()
+        url = reverse('admin:unisender_emailmessage_add')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        csrf = get_csrf_token(response)
+        subscribe_list = SubscribeList.objects.create(title='test')
+        post_data = {'list_id': subscribe_list.pk,
+                     'csrfmiddlewaretoken': csrf,
+                     'sender_name': 'test',
+                     'sender_email': 'mail@example.com',
+                     'subject': 'test',
+                     'body': 'test',
+                     'lang': 'ru',
+                     'generate_text': 1,
+                     'wrap_type': 'skip',
+                     'double_optin': 1,
+                     'series_time': '11:00'
+                     }
+        response = self.client.post(url, post_data)
+        self.assertRedirects(response, reverse('admin:unisender_emailmessage_changelist'))
+        self.assertEqual(EmailMessage.objects.count(), start_subscriber_count + 1)
+
+    def test_update_subscribe_list(self):
+        """Редактируем email сообщение"""
+        subscribe_list = SubscribeList.objects.create(title='test')
+        email = EmailMessage.objects.create(
+            sender_name='test', sender_email='mail@example.com', subject='test',
+            body='test', lang='ru', generate_text=1, wrap_type='skip',
+            list_id=subscribe_list
+            )
+        url = reverse('admin:unisender_emailmessage_change', args=(email.pk,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        csrf = get_csrf_token(response)
+        post_data = {'list_id': subscribe_list.pk,
+                     'csrfmiddlewaretoken': csrf,
+                     'sender_name': 'test',
+                     'sender_email': 'mail@example.com',
+                     'subject': 'test',
+                     'body': 'test',
+                     'lang': 'ru',
+                     'generate_text': 1,
+                     'wrap_type': 'skip',
+                     'double_optin': 1,
+                     'series_time': '11:00'
+                     }
+        response = self.client.post(url, post_data)
+        self.assertRedirects(response, reverse('admin:unisender_emailmessage_changelist'))
+        self.assertTrue(EmailMessage.objects.filter(
+            sender_email='mail@example.com').exists())
+
+    def test_delete_subscribe_list(self):
+        """Удаляем email сообщение"""
+        start_unisender_count = EmailMessage.objects.count()
+        subscribe_list = SubscribeList.objects.create(title='test')
+        message = EmailMessage.objects.create(
+            sender_name='test', sender_email='mail@example.com', subject='test',
+            body='test', lang='ru', generate_text=1, wrap_type='skip',
+            list_id=subscribe_list
+            )
+        url = reverse('admin:unisender_emailmessage_delete', args=(message.pk,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        csrf = get_csrf_token(response)
+        post_data = {'csrfmiddlewaretoken': csrf}
+        response = self.client.post(url, post_data)
+        self.assertRedirects(
+            response, reverse('admin:unisender_emailmessage_changelist'))
+        self.assertEqual(EmailMessage.objects.count(), start_unisender_count)
+
+    def test_admin_get_actions(self):
+        actions = self.admin.get_actions(self.request)
+        self.assertEqual(len(actions.keys()), 1)
+        self.assertIn('delete_selected_emails', actions)
+
+    def test_delete_selected_emails(self):
+        start_unisender_count = EmailMessage.objects.count()
+        EmailMessage.delete_message = Mock(return_value=None)
+        subscribe_list = SubscribeList.objects.create(title='test')
+        for x in xrange(3):
+            EmailMessage.objects.create(
+                sender_name='test', sender_email='mail@example.com', subject='test',
+                body='test', lang='ru', generate_text=1, wrap_type='skip',
+                list_id=subscribe_list
+                )
+        queryset = EmailMessage.objects.all()
+        self.admin.delete_selected_emails(self.request, queryset)
+        self.assertTrue(EmailMessage.delete_message.called)
+        self.assertEqual(EmailMessage.delete_message.call_count, 3)
+        self.assertEqual(EmailMessage.objects.count(), start_unisender_count)
+
+    def test_save_model(self):
+        start_unisender_count = Subscriber.objects.count()
+        subscribe_list = SubscribeList.objects.create(title='test')
+        message = EmailMessage.objects.create(
+            sender_name='test', sender_email='mail@example.com', subject='test',
+            body='test', lang='ru', generate_text=1, wrap_type='skip',
+            list_id=subscribe_list
+            )
+        message.create_email_message = Mock(return_value=None)
+        self.admin.save_model(self.request, message, None, None)
+        self.assertEqual(EmailMessage.objects.count(), start_unisender_count + 1)
+        self.assertTrue(message.create_email_message.called)
+        self.assertEqual(message.create_email_message.call_count, 1)
+
+        message_2 = EmailMessage.objects.create(
+            sender_name='test', sender_email='mail@example.com', subject='test',
+            body='test', lang='ru', generate_text=1, wrap_type='skip',
+            list_id=subscribe_list, unisender_id=1
+            )
+        message_2.create_email_message = Mock(return_value=None)
+        self.admin.save_model(self.request, message_2, None, None)
+        self.assertEqual(EmailMessage.objects.count(),
+                         start_unisender_count + 2)
+        self.assertFalse(message_2.create_email_message.called)
+
+    def test_delete_model(self):
+        start_unisender_count = EmailMessage.objects.count()
+        subscribe_list = SubscribeList.objects.create(title='test')
+        message = EmailMessage.objects.create(
+            sender_name='test', sender_email='mail@example.com', subject='test',
+            body='test', lang='ru', generate_text=1, wrap_type='skip',
+            list_id=subscribe_list
+            )
+        message.delete_message = Mock(return_value=None)
+        self.admin.delete_model(self.request, message)
+        self.assertEqual(EmailMessage.objects.count(), start_unisender_count)
+        self.assertTrue(message.delete_message.called)
+        self.assertEqual(message.delete_message.call_count, 1)
+
+
+    def test_get_readonly_fields(self):
+        readonly_fields_initial = ['unisender_id', 'sync', 'get_last_error']
+        self.assertListEqual(
+            readonly_fields_initial,
+            self.admin.get_readonly_fields(self.request))
+        subscribe_list = SubscribeList.objects.create(title='test')
+        message = EmailMessage.objects.create(
+            sender_name='test', sender_email='mail@example.com', subject='test',
+            body='test', lang='ru', generate_text=1, wrap_type='skip',
+            list_id=subscribe_list, sync=True
+            )
+        readonly_fields_all = readonly_fields_initial
+        readonly_fields_all.extend([
+            'sender_name', 'sender_email', 'subject', 'body', 'list_id', 'lang',
+            'text_body', 'generate_text', 'wrap_type', 'categories', 'tag',
+            'read_only_body', 'series_day', 'last_error', 'series_time', 'id'])
+        self.assertItemsEqual(
+            readonly_fields_all,
+            self.admin.get_readonly_fields(self.request, message))
+

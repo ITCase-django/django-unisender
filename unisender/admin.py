@@ -53,8 +53,7 @@ class FieldAdmin(UnisenderAdmin):
 
     def delete_selected_fields(self, request, queryset):
         for item in queryset:
-            item.delete_field(request)
-            item.delete()
+            self.delete_model(request, item)
     delete_selected_fields.short_description = u'Удалить выбранные Поля'
 
     def save_model(self, request, obj, form, change):
@@ -104,8 +103,7 @@ class SubscribeListAdmin(UnisenderAdmin):
 
     def delete_selected_subscribe_list(self, request, queryset):
         for item in queryset:
-            item.delete_list(request)
-            item.delete()
+            self.delete_model(request, item)
     delete_selected_subscribe_list.short_description = u'Удалить выбранные Списки подписчиков'
 
     def delete_model(self, request, obj):
@@ -155,8 +153,7 @@ class SubscriberAdmin(UnisenderAdmin):
 
     def delete_selected_subscribers(self, request, queryset):
         for item in queryset:
-            item.exclude(request)
-            item.delete()
+            self.delete_model(request, item)
     delete_selected_subscribers.short_description = u'Удалить выбранных Подписчиков'
 
     def delete_model(self, request, obj):
@@ -189,7 +186,7 @@ class EmailMessageAdmin(UnisenderAdmin):
                 [field.name for field in self.opts.local_many_to_many]
             ))
             result += ['get_last_error']
-            result += ['reaad_only_body']
+            result += ['read_only_body']
             return result
         return super(EmailMessageAdmin, self).get_readonly_fields(request, obj=None)
 
@@ -199,7 +196,7 @@ class EmailMessageAdmin(UnisenderAdmin):
             field_sets = unisender_fieldsets + [
             [u'Сообщение', {
                 'fields': ['sender_name', 'sender_email', 'subject',
-                           'reaad_only_body', 'list_id', 'lang', 'text_body',
+                           'read_only_body', 'list_id', 'lang', 'text_body',
                            'generate_text', 'wrap_type', 'categories', 'tag']
             }]] + auto_send_fieldset
         return field_sets
@@ -218,8 +215,7 @@ class EmailMessageAdmin(UnisenderAdmin):
 
     def delete_selected_emails(self, request, queryset):
         for item in queryset:
-            item.delete_message(request)
-            item.delete()
+            self.delete_model(request, item)
     delete_selected_emails.short_description = u'Удалить выбранные сообщения электронной почты'
 
     def delete_model(self, request, obj):
@@ -320,10 +316,7 @@ class CampaignAdmin(UnisenderAdmin):
 
     def delete_selected_campaigns(self, request, queryset):
         for item in queryset:
-            messages.warning(
-                request,
-                _(u'Объект был удален из БД сайта, но остался в БД unisender вам необходимо удалить его самостоятельно оттуда'))
-            item.delete()
+            self.delete_model(request, item)
     delete_selected_campaigns.short_description = u'Удалить выбранные Поля'
 
     def delete_model(self, request, obj):
