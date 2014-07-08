@@ -13,6 +13,11 @@ from tinymce_4.fields import TinyMCEModelField
 
 from pyunisend import PyUniSend
 
+try:
+    from south.modelsinspector import add_introspection_rules
+    add_introspection_rules([], ['^tinymce_4\.fields\.TinyMCEModelField'])
+except ImportError:
+    pass
 # app imports
 from error_codes import UNISENDER_COMMON_ERRORS
 from settings import UNISENDER_API_KEY, UNISENDER_TEST_MODE
