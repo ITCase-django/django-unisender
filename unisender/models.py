@@ -8,6 +8,8 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django import forms
 from django.contrib import messages
+from django.db.models.signals import m2m_changed, post_save
+from django.dispatch import receiver
 # third part imports
 from tinymce_4.fields import TinyMCEModelField
 
@@ -440,6 +442,13 @@ class Subscriber(UnisenderModel):
         verbose_name = _(u'Подписчик')
         verbose_name_plural = _(u'Подписчики')
 
+@receiver(m2m_changed, sender=Subscriber.list_ids.through)
+def sync_subscriber_m2m_on_save(sender, instance, action, **kwargs):
+    if action == 'pre_clear':
+        instance.exclude()
+    if action == 'post_add':
+        instance.unisender_id = instance.subscribe()
+
 
 class SubscriberFields(models.Model):
     subscriber = models.ForeignKey(Subscriber, verbose_name=u'подписчик',
@@ -450,6 +459,10 @@ class SubscriberFields(models.Model):
     class Meta:
         verbose_name = _(u'дополнительное поле к подписчику')
         verbose_name_plural = _(u'дополнительные поля к подписчику')
+
+@receiver(post_save, sender=SubscriberFields)
+def sync_subscriberlist_on_save(sender, instance, created, **kwargs):
+    instance.subscriber.subscribe()
 
 
 class MessageModel(UnisenderModel):

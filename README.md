@@ -38,6 +38,12 @@ INSTALLED_APPS = (
 UNISENDER_API_KEY = 'your_key'
 ```
 
+Выполните:
+```python manage.py syncdb```
+
+либо если вы используете south
+```python manage.py migrate unisender```
+
 ## Использование
 
 ### Настройки

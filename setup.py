@@ -1,27 +1,31 @@
+import os
 from unisender import __version__
 from setuptools import setup
 
+README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
+os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
+
 setup(
-    name='unisender',
+    name='django-unisender',
     version=__version__,
     url='http://github.com/ITCase/django-unisender/',
     author='Efimov Alexey',
     author_email='alexey.efimov@itcase.pro',
 
-    packages=['django-unisender', ],
+    packages=['unisender', ],
     include_package_data=True,
     zip_safe=False,
     test_suite='nose.collector',
     license='MIT',
     description='Django admin unisender integration',
+    long_description=README,
     package_data={
         '': ['*.txt', '*.rst', '*.md'],
     },
-    long_description='http://github.com/ITCase/unisender/',
     install_requires=[
         'pyunisend',
-        'django>=1.4, <1.7',
-        'git+git://github.com/ITCase/django-tinymce-4',
+        'django',
+        # 'git+git://github.com/ITCase/django-tinymce-4',
         'mock'
     ],
     classifiers=[
