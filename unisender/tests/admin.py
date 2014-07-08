@@ -350,6 +350,15 @@ class SubscriberAdminTestCase(TestCase):
         self.admin = SubscriberAdmin(Subscriber, site)
         self.request = RequestFactory().get(reverse('admin:index'))
 
+    def test_get_readonly_fields(self):
+        subscribe_list = SubscribeList.objects.create(title='test', sync=True)
+        self.assertIn(
+            'contact',
+            self.admin.get_readonly_fields(self.request, obj=subscribe_list))
+        self.assertIn(
+            'contact_type',
+            self.admin.get_readonly_fields(self.request, subscribe_list))
+
     def test_open_unisender_page(self):
         """Открываем страницу подписчиков в админке"""
         response = self.client.get(
@@ -631,6 +640,39 @@ class EmailMessageAdminTestCase(TestCase):
         self.assertItemsEqual(
             readonly_fields_all,
             self.admin.get_readonly_fields(self.request, message))
+
+    def test_get_fieldsets(self):
+        fieldsets_initial = [
+            [u'Unisender',
+             {'fields': ['unisender_id', 'sync', 'get_last_error']}],
+            [u'Сообщение',
+             {'fields': ['sender_name', 'sender_email', 'subject', 'body',
+                         'list_id', 'lang', 'text_body', 'generate_text',
+                         'wrap_type', 'categories', 'tag']}],
+            [u'Автоматическая отправка',
+             {'fields': ['series_day', 'series_time']}]]
+        self.assertItemsEqual(
+            fieldsets_initial,
+            self.admin.get_fieldsets(self.request))
+        subscribe_list = SubscribeList.objects.create(title='test')
+        message = EmailMessage.objects.create(
+            sender_name='test', sender_email='mail@example.com', subject='test',
+            body='test', lang='ru', generate_text=1, wrap_type='skip',
+            list_id=subscribe_list, unisender_id=1
+        )
+        fieldsets_all = [
+            [u'Unisender',
+             {'fields': ['unisender_id', 'sync', 'get_last_error']}],
+            [u'Сообщение',
+             {'fields': ['sender_name', 'sender_email', 'subject',
+                         'read_only_body',
+                         'list_id', 'lang', 'text_body', 'generate_text',
+                         'wrap_type', 'categories', 'tag']}],
+            [u'Автоматическая отправка',
+             {'fields': ['series_day', 'series_time']}]]
+        self.assertItemsEqual(
+            fieldsets_all,
+            self.admin.get_fieldsets(self.request, message))
 
 
 class CampaignAdminTestCase(TestCase):

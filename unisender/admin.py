@@ -117,7 +117,6 @@ class SubscriberFieldsInline(admin.TabularInline):
 
 
 class SubscriberAdmin(UnisenderAdmin):
-    # TODO form validation
     fieldsets = unisender_fieldsets + [
         (u'Подписчик', {
             'fields': ['list_ids', 'tags', 'contact_type', 'contact',
@@ -131,7 +130,8 @@ class SubscriberAdmin(UnisenderAdmin):
     inlines = [SubscriberFieldsInline]
 
     def get_readonly_fields(self, request, obj=None):
-        readonly_fields = super(SubscriberAdmin, self).get_readonly_fields(request, obj=None)
+        readonly_fields = super(SubscriberAdmin, self).get_readonly_fields(
+            request, obj=obj)
         if obj and obj.sync:
             readonly_fields += ('contact', 'contact_type')
         return readonly_fields
