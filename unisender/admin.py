@@ -4,6 +4,7 @@ from django.conf.urls import patterns, url
 from django.contrib import messages
 from django.utils.translation import ugettext_lazy as _
 from django import forms
+from django.core.exceptions import ValidationError
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
@@ -245,6 +246,16 @@ admin.site.register(EmailMessage, EmailMessageAdmin)
 # admin.site.register(SmsMessage)
 
 
+class CampaignAdminForm(forms.ModelForm):
+
+    def clean_contacts(self):
+        if self.cleaned_data['contacts'] or self.cleaned_data['email_message'].list_id:
+            return self.cleaned_data['contacts']
+        else:
+            raise ValidationError(
+                u'''У выбранного сообщения отсутствует список контактов,
+                    вам необходимо выбрать контакты которым будет осуществлена рассылка''')
+
 class CampaignAdmin(UnisenderAdmin):
     change_form_template = 'unisender/admin/change_campaign.html'
     fieldsets = unisender_fieldsets + [
@@ -260,6 +271,8 @@ class CampaignAdmin(UnisenderAdmin):
     search_fields = ['name', 'contacts', ]
 
     filter_horizontal = ['contacts']
+
+    form = CampaignAdminForm
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.sync:
@@ -323,6 +336,7 @@ class CampaignAdmin(UnisenderAdmin):
         if not obj.unisender_id:
             obj.unisender_id = obj.create_campaign(request)
         obj.save()
+
 
     actions = ['delete_selected_campaigns']
 
