@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.conf.urls import patterns, url
 from django.contrib import messages
 from django.utils.translation import ugettext_lazy as _
+from django import forms
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
@@ -164,6 +165,14 @@ auto_send_fieldset = [[u'Автоматическая отправка', {
             'fields': ['series_day', 'series_time', ]
         }]]
 
+
+class EmailMessageForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(EmailMessageForm, self).__init__(*args, **kwargs)
+        if not self.instance.unisender_id:
+            self.fields['list_id'].required = True
+
+
 class EmailMessageAdmin(UnisenderAdmin):
     fieldsets = unisender_fieldsets + [
         [u'Сообщение', {
@@ -176,6 +185,8 @@ class EmailMessageAdmin(UnisenderAdmin):
         '__unicode__', 'sender_name', 'subject', 'unisender_id', 'sync')
     list_display_links = ('__unicode__', )
     search_fields = ['sender_name', 'subject', 'body', ]
+
+    form = EmailMessageForm
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.sync:

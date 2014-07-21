@@ -524,10 +524,11 @@ class EmailMessage(MessageModel):
     subject = models.CharField(_(u'Тема'), max_length=255)
     body = TinyMCEModelField(_(u'Текст письма в формате HTML'))
     list_id = models.ForeignKey(SubscribeList, verbose_name=u'Список рассылки',
-                                related_name='emails')
+                                related_name='emails',
+                                on_delete=models.SET_NULL, null=True)
     tag = models.ForeignKey(
         Tag, related_name='emails', verbose_name=u'Метка', blank=True,
-        null=True)
+        null=True, on_delete=models.SET_NULL)
     lang = models.CharField(_(u'Язык'), max_length=50,
                             choices=LANGUAGES,
                             default=LANGUAGES[0][0])
