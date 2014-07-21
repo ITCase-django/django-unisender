@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # python imports
 import logging
+import re
 from datetime import datetime
 
 # django imports
@@ -10,6 +11,8 @@ from django import forms
 from django.contrib import messages
 from django.db.models.signals import m2m_changed, post_save
 from django.dispatch import receiver
+from django.core.exceptions import ValidationError
+
 # third part imports
 from tinymce_4.fields import TinyMCEModelField
 
@@ -95,6 +98,12 @@ class Tag(UnisenderModel):
         verbose_name_plural = _(u'Метки')
 
 
+def validate_field_name_field(value):
+    if not re.match('[a-zA-Z0-9_]+', value):
+        raise ValidationError(
+            u'''Название поля может содержать, только символы английского
+                алфавита цифры и знак подчеркивания''')
+
 class Field(UnisenderModel):
     TYPE_CHOICES = [
         ('string', _(u'строка')),
@@ -102,7 +111,8 @@ class Field(UnisenderModel):
         ('number', _(u'число')),
         ('bool', _(u'да/нет.')),
     ]
-    name = models.CharField(_(u'Поле'), max_length=255)
+    name = models.CharField(_(u'Поле'), max_length=255,
+                            validators=[validate_field_name_field])
     field_type = models.CharField(_(u'Тип поля'), max_length=50,
                                   choices=TYPE_CHOICES,
                                   default=TYPE_CHOICES[0][0])
