@@ -245,7 +245,7 @@ class SubscribeList(UnisenderModel):
         '''
         api = self.get_api()
         responce = api.updateList(
-            title=self.title, list_id=self.unisender_id,
+            title=self.title.encode('utf-8'), list_id=self.unisender_id,
             before_subscribe_url=self.before_subscribe_url,
             after_subscribe_url=self.after_subscribe_url)
         result = responce.get('result')
@@ -271,7 +271,7 @@ class SubscribeList(UnisenderModel):
         '''
         api = self.get_api()
         responce = api.createList(
-            title=self.title,
+            title=self.title.encode('utf-8'),
             before_subscribe_url=self.before_subscribe_url,
             after_subscribe_url=self.after_subscribe_url)
         result = responce.get('result')
