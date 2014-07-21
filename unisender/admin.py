@@ -134,7 +134,15 @@ class SubscriberAdmin(UnisenderAdmin):
         readonly_fields = super(SubscriberAdmin, self).get_readonly_fields(
             request, obj=obj)
         if obj and obj.sync:
-            readonly_fields += ('contact', 'contact_type')
+            readonly_fields += ['contact', 'contact_type']
+        else:
+            # save and add another button behavior
+            readonly_fields = list(set(readonly_fields))
+            if 'contact' in readonly_fields:
+                readonly_fields.remove('contact')
+            if 'contact_type' in readonly_fields:
+                readonly_fields.remove('contact_type')
+
         return readonly_fields
 
     def save_model(self, request, obj, form, change):
