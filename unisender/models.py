@@ -305,6 +305,12 @@ class Subscriber(UnisenderModel):
         ('email', _(u'email')),
         ('phone', _(u'телефон')),
     ]
+    DOUBLE_OPTIN_CHOICES = [
+        ('0', '0'),
+        ('1', '1'),
+        ('2', '2'),
+        ('3', '3'),
+    ]
     list_ids = models.ManyToManyField(
         SubscribeList, related_name='subscribers',
         verbose_name=_(u'Списки рассылки'))
@@ -314,7 +320,7 @@ class Subscriber(UnisenderModel):
                                     choices=CONTACT_TYPE,
                                     default=CONTACT_TYPE[0][0])
     contact = models.CharField(_(u'email/телефон'), max_length=255)
-    double_optin = models.SmallIntegerField(
+    double_optin = models.CharField(
         _(u'Число от 0 до 3 - есть ли подтверждённое согласие подписчика'),
         help_text='''Если 0, то мы считаем, что подписчик только высказал
                      желание подписаться, но ещё не подтвердил подписку.
@@ -339,7 +345,8 @@ class Subscriber(UnisenderModel):
 
                     Если 3, то также считается, что у Вас согласие подписчика
                     уже есть, но в случае превышения лимита подписчик
-                    добавляется со статусом «новый». ''', default=1)
+                    добавляется со статусом «новый». ''',
+                    choices=DOUBLE_OPTIN_CHOICES, default=DOUBLE_OPTIN_CHOICES[1][0], max_length=2)
 
     def serialize_fields(self):
         result = {}

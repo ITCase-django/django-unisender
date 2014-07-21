@@ -380,7 +380,7 @@ class SubscriberAdminTestCase(TestCase):
                      'fields-TOTAL_FORMS': 0,
                      'fields-INITIAL_FORMS': 0,
                      'fields-MAX_NUM_FORMS': 1000,
-                     'double_optin': 1,
+                     'double_optin': '1',
                      }
         response = self.client.post(url, post_data)
         self.assertRedirects(
