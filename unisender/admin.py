@@ -10,7 +10,7 @@ from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
     EmailMessage, Campaign)
 
-from unisender.views import GetCampaignStatistic, GetTags, GetFields
+from unisender.views import GetCampaignStatistic, GetTags, GetFields, GetLists
 
 unisender_fieldsets = [
     [u'Unisender', {
@@ -108,6 +108,17 @@ class SubscribeListAdmin(UnisenderAdmin):
                     'before_subscribe_url', 'after_subscribe_url')
     list_display_links = ('__unicode__', )
     search_fields = ['title', ]
+    change_list_template = 'unisender/admin/change_subscriber_list_list.html'
+
+    def get_urls(self):
+        urls = super(SubscribeListAdmin, self).get_urls()
+        my_urls = patterns('',
+            url(r'get_lists/$',
+             self.admin_site.admin_view(GetLists.as_view()),
+             name='unisender_get_lists',
+             ),
+        )
+        return my_urls + urls
 
     def save_model(self, request, obj, form, change):
         if obj.unisender_id:

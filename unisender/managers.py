@@ -112,25 +112,28 @@ class UnisenderListManager(UnisenderManager):
         '''
         return self.api.getLists()
 
-    def get_and_update_lists(self):
+    def get_and_update_lists(self, request=None):
         '''
         Выполняет команду getLists и обновляет значения в БД:
         http://www.unisender.com/ru/help/api/getLists/
         '''
         lists = self.get_lists()
-        result = lists.get('result')
+        result = lists.get('result', [])
         error = lists.get('error')
         warning = lists.get('warning')
-        if result:
-            for item in lists['result']:
-                self.model.objects.get_or_create(
-                    title=item['title'], unisender_id=item['id'])
+        for item in result:
+            tag, created = self.model.objects.get_or_create(title=item['title'])
+            tag.unisender_id = int(item['id'])
+            tag.sync = True
+            tag.save()
+        self.success_message(
+            _(u'%s списков получено от unisender') % len(result),
+            request=request)
         if error:
-            # TODO last errors
-            pass
+            error_msg = UNISENDER_COMMON_ERRORS.get(lists.get('code'), error)
+            self.log_error(error_msg, request)
         if warning:
-            # TODO last warnings
-            pass
+            self.log_warning(warning, request)
 
 
 class UnisenderCampaignManager(UnisenderManager):

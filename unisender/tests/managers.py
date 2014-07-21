@@ -117,11 +117,13 @@ class ListManagerTestCase(TestCase):
         self.assertEquals(subscribe_list, resulted_list)
 
     def test__get_and_update_subscribe_lists(self):
+        list_1 = SubscribeList.objects.create(title='test 1')
+        self.assertFalse(list_1.sync)
         self.manager.get_and_update_lists()
         list_1 = SubscribeList.objects.get(title='test 1')
-        self.assertFalse(list_1.sync)
+        self.assertTrue(list_1.sync)
         list_2 = SubscribeList.objects.get(title='test 2')
-        self.assertFalse(list_2.sync)
+        self.assertTrue(list_2.sync)
 
 
 class CampaignManagerTestCase(TestCase):

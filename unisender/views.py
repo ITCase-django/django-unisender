@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.views.generic.base import RedirectView
 
 #app
-from unisender.models import Campaign, Tag, Field
+from unisender.models import Campaign, Tag, Field, SubscribeList
 
 
 class GetCampaignStatistic(RedirectView):
@@ -40,3 +40,12 @@ class GetFields(RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         Field.unisender.get_and_update_fields(self.request)
         return super(GetFields, self).get_redirect_url(*args, **kwargs)
+
+
+class GetLists(RedirectView):
+    permanent = False
+    pattern_name = 'admin:unisender_subscribelist_changelist'
+
+    def get_redirect_url(self, *args, **kwargs):
+        SubscribeList.unisender.get_and_update_lists(self.request)
+        return super(GetLists, self).get_redirect_url(*args, **kwargs)
