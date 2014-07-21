@@ -33,13 +33,14 @@ class TagManagerTestCase(TestCase):
         self.assertEquals(tags, resulted_tags)
 
     def test__get_and_update_tags(self):
+        tag_1 = Tag.objects.create(name='test 1')
+        self.assertFalse(tag_1.sync)
         self.manager.get_and_update_tags()
         tag_1 = Tag.objects.get(unisender_id=1)
-        self.assertEquals(tag_1.name, 'test 1')
-        self.assertFalse(tag_1.sync)
+        self.assertTrue(tag_1.sync)
         tag_2 = Tag.objects.get(unisender_id=2)
         self.assertEquals(tag_2.name, 'test 2')
-        self.assertFalse(tag_2.sync)
+        self.assertTrue(tag_2.sync)
 
 
 class FieldManagerTestCase(TestCase):

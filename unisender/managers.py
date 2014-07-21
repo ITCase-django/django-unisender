@@ -1,16 +1,38 @@
 # -*- coding: utf-8 -*-
+import logging
+
 from django.db import models
+from django.contrib import messages
+from django.utils.translation import ugettext_lazy as _
 
 from pyunisend import PyUniSend
 from settings import UNISENDER_API_KEY, UNISENDER_TEST_MODE
 
+from error_codes import UNISENDER_COMMON_ERRORS
 
 test_mode = 1 if UNISENDER_TEST_MODE else 0
 
+logger = logging.getLogger(__name__)
 
 class UnisenderManager(models.Manager):
 
     api = PyUniSend(UNISENDER_API_KEY, test_mode=test_mode)
+
+    def log_warning(self, msg, request=None):
+        if request:
+            messages.warning(request, _(u'Сообщение при синхронизации с unisender: %s' % msg))
+        logger.info(unicode(_(u'Сообщение при синхронизации с unisender: %s' % msg)))
+
+    def success_message(self, message, request=None):
+        if request:
+            messages.success(request, message)
+
+    def log_error(self, error, request=None):
+        if request:
+            messages.error(
+                request,
+                _(u'При синхронизации с unisender проиошла ошибка: %s' % error))
+        logger.error(unicode(_(u'При синхронизации с unisender проиошла ошибка: %s' % error)))
 
 
 class UnisenderTagManager(UnisenderManager):
@@ -22,7 +44,7 @@ class UnisenderTagManager(UnisenderManager):
         '''
         return self.api.getTags()
 
-    def get_and_update_tags(self):
+    def get_and_update_tags(self, request=None):
         '''
         Выполняет команду getTags и обновляет значения в БД:
         http://www.unisender.com/ru/help/api/getTags/
@@ -32,15 +54,19 @@ class UnisenderTagManager(UnisenderManager):
         error = tags.get('error')
         warning = tags.get('warning')
         if result:
-            for item in tags['result']:
-                self.model.objects.get_or_create(
-                    name=item['name'], unisender_id=item['id'])
+            for item in result:
+                tag, created = self.model.objects.get_or_create(name=item['name'])
+                tag.unisender_id = int(item['id'])
+                tag.sync = True
+                tag.save()
+            self.success_message(
+                _(u'%s меток получено от unisender') % len(result),
+                request=request)
         if error:
-            # TODO last errors
-            pass
+            error_msg = UNISENDER_COMMON_ERRORS.get(tags.get('code'), error)
+            self.log_error(error_msg, request)
         if warning:
-            # TODO last warnings
-            pass
+            self.log_warning(warning, request)
 
 
 class UnisenderFieldManager(UnisenderManager):

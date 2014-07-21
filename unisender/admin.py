@@ -10,7 +10,7 @@ from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
     EmailMessage, Campaign)
 
-from unisender.views import GetCampaignStatistic
+from unisender.views import GetCampaignStatistic, GetTags
 
 unisender_fieldsets = [
     [u'Unisender', {
@@ -31,6 +31,17 @@ class TagAdmin(UnisenderAdmin):
     list_display = ('__unicode__', 'unisender_id', 'sync', )
     list_display_links = ('__unicode__', )
     search_fields = ['name', ]
+    change_list_template = 'unisender/admin/change_tag_list.html'
+
+    def get_urls(self):
+        urls = super(TagAdmin, self).get_urls()
+        my_urls = patterns('',
+            url(r'get_tags/$',
+             self.admin_site.admin_view(GetTags.as_view()),
+             name='unisender_get_tags',
+             ),
+        )
+        return my_urls + urls
 
 admin.site.register(Tag, TagAdmin)
 
