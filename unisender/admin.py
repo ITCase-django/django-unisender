@@ -10,7 +10,9 @@ from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
     EmailMessage, Campaign)
 
-from unisender.views import GetCampaignStatistic, GetTags, GetFields, GetLists
+from unisender.views import (
+        GetCampaignStatistic, GetTags, GetFields, GetLists, GetCampaigns
+    )
 
 unisender_fieldsets = [
     [u'Unisender', {
@@ -283,12 +285,22 @@ admin.site.register(EmailMessage, EmailMessageAdmin)
 class CampaignAdminForm(forms.ModelForm):
 
     def clean_contacts(self):
-        if self.cleaned_data['contacts'] or self.cleaned_data['email_message'].list_id:
+        email_message = self.cleaned_data.get('email_message', None)
+        if not email_message:
+            return self.cleaned_data['contacts']
+        if self.cleaned_data['contacts'] or (email_message and email_message.list_id):
             return self.cleaned_data['contacts']
         else:
             raise ValidationError(
                 u'''У выбранного сообщения отсутствует список контактов,
                     вам необходимо выбрать контакты которым будет осуществлена рассылка''')
+
+    def __init__(self, *args, **kwargs):
+        super(CampaignAdminForm, self).__init__(*args, **kwargs)
+        if not self.instance.unisender_id:
+            self.fields['name'].required = True
+            self.fields['email_message'].required = True
+
 
 class CampaignAdmin(UnisenderAdmin):
     change_form_template = 'unisender/admin/change_campaign.html'
@@ -300,11 +312,11 @@ class CampaignAdmin(UnisenderAdmin):
         })]
 
     list_display = (
-        '__unicode__', 'name', 'email_message', 'unisender_id', 'sync')
-    list_display_links = ('__unicode__', )
+        '__unicode__', 'email_message', 'unisender_id', 'sync')
+    list_display_links = ('__unicode__',  'email_message', 'unisender_id')
     search_fields = ['name', 'contacts', ]
-
     filter_horizontal = ['contacts']
+    change_list_template = 'unisender/admin/change_campaign_list.html'
 
     form = CampaignAdminForm
 
@@ -361,6 +373,11 @@ class CampaignAdmin(UnisenderAdmin):
              self.admin_site.admin_view(GetCampaignStatistic.as_view()),
              name='unisender_campaign_get_statistic',
              ),
+            url(r'get_campaigns/$',
+             self.admin_site.admin_view(GetCampaigns.as_view()),
+             name='unisender_get_campaigns',
+             ),
+
         )
         return my_urls + urls
 

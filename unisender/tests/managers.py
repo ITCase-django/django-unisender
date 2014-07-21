@@ -145,7 +145,7 @@ class CampaignManagerTestCase(TestCase):
 
     def test__get_campaings(self):
         # simple test
-        subscribe_list = self.manager.get_campaings()
+        subscribe_list = self.manager.get_campaigns()
         resulted_list = {
             'result': [
             {'id': 1, 'start_time':

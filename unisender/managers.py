@@ -138,10 +138,33 @@ class UnisenderListManager(UnisenderManager):
 
 class UnisenderCampaignManager(UnisenderManager):
 
-    def get_campaings(self, from_arg=None, to_arg=None):
+    def get_campaigns(self, from_arg=None, to_arg=None):
         '''
         Возвращает результат выполнения команды getCampaigns:
         http://www.unisender.com/ru/help/api/getCampaigns/
         '''
         params = {'from': from_arg, 'to': to_arg}
         return self.api.getCampaigns(params=params)
+
+    def get_and_update_campaigns(self, request=None, from_arg=None, to_arg=None):
+        '''
+        Выполняет команду getCampaigns и обновляет значения в БД:
+         http://www.unisender.com/ru/help/api/getCampaigns/
+        '''
+        campaigns = self.get_campaigns()
+        result = campaigns.get('result', [])
+        error = campaigns.get('error')
+        warning = campaigns.get('warning')
+        for item in result:
+            tag, created = self.model.objects.get_or_create(
+                unisender_id=int(item['id']))
+            tag.sync = True
+            tag.save()
+        self.success_message(
+            _(u'%s рассылок получено от unisender') % len(result),
+            request=request)
+        if error:
+            error_msg = UNISENDER_COMMON_ERRORS.get(campaigns.get('code'), error)
+            self.log_error(error_msg, request)
+        if warning:
+            self.log_warning(warning, request)

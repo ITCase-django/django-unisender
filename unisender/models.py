@@ -649,8 +649,11 @@ class Campaign(UnisenderModel):
         ('canceled',
          u'рассылка отменена (обычно из-за нехватки денег или по желанию пользователя)'),
     ]
-    name = models.CharField(_(u'Название рассылки'), max_length=255)
-    email_message = models.ForeignKey(EmailMessage, verbose_name=u'Сообщение')
+
+    name = models.CharField(
+        _(u'Название рассылки'), max_length=255, blank=True, null=True)
+    email_message = models.ForeignKey(
+        EmailMessage, verbose_name=u'Сообщение', null=True)
     start_time = models.DateTimeField(
         _(u'Дата и время запуска рассылки'), blank=True, null=True)
     track_read = models.CharField(
@@ -894,7 +897,12 @@ class Campaign(UnisenderModel):
             self.log_error(request)
 
     def __unicode__(self):
-        return unicode(self.name)
+        name = self.pk
+        if self.name:
+            name = self.name
+        elif self.unisender_id:
+            name = self.unisender_id
+        return unicode(name)
 
     class Meta:
         ordering = ('name',)

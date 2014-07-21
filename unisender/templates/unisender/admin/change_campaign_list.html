@@ -1,0 +1,13 @@
+{% extends "admin/change_list.html" %}
+{% load admin_static i18n admin_modify %}
+
+{% block object-tools %}
+    {% if has_add_permission %}
+        <ul class="grp-object-tools">
+            {% block object-tools-items %}
+                {{ block.super }}
+            {% endblock %}
+            <li><a href="{% url 'admin:unisender_get_campaigns' %}" class="grp-state-focus">Получить рассылки с сайта unisender</a></li>
+        </ul>
+    {% endif %}
+{% endblock %}

@@ -49,3 +49,12 @@ class GetLists(RedirectView):
     def get_redirect_url(self, *args, **kwargs):
         SubscribeList.unisender.get_and_update_lists(self.request)
         return super(GetLists, self).get_redirect_url(*args, **kwargs)
+
+
+class GetCampaigns(RedirectView):
+    permanent = False
+    pattern_name = 'admin:unisender_campaign_changelist'
+
+    def get_redirect_url(self, *args, **kwargs):
+        Campaign.unisender.get_and_update_campaigns(request=self.request)
+        return super(GetCampaigns, self).get_redirect_url(*args, **kwargs)
