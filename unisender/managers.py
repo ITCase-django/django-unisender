@@ -50,18 +50,17 @@ class UnisenderTagManager(UnisenderManager):
         http://www.unisender.com/ru/help/api/getTags/
         '''
         tags = self.get_tags()
-        result = tags.get('result')
+        result = tags.get('result', [])
         error = tags.get('error')
         warning = tags.get('warning')
-        if result:
-            for item in result:
-                tag, created = self.model.objects.get_or_create(name=item['name'])
-                tag.unisender_id = int(item['id'])
-                tag.sync = True
-                tag.save()
-            self.success_message(
-                _(u'%s меток получено от unisender') % len(result),
-                request=request)
+        for item in result:
+            tag, created = self.model.objects.get_or_create(name=item['name'])
+            tag.unisender_id = int(item['id'])
+            tag.sync = True
+            tag.save()
+        self.success_message(
+            _(u'%s меток получено от unisender') % len(result),
+            request=request)
         if error:
             error_msg = UNISENDER_COMMON_ERRORS.get(tags.get('code'), error)
             self.log_error(error_msg, request)
@@ -78,27 +77,31 @@ class UnisenderFieldManager(UnisenderManager):
         '''
         return self.api.getFields()
 
-    def get_and_update_fields(self):
+    def get_and_update_fields(self, request=None):
         '''
         Выполняет команду getFields и обновляет значения в БД:
         http://www.unisender.com/ru/help/api/getFields/
         '''
         fields = self.get_fields()
-        result = fields.get('result')
+        result = fields.get('result', [])
         error = fields.get('error')
         warning = fields.get('warning')
-        if result:
-            for item in fields['result']:
-                visible = True if item['is_visible'] == 1 else 0
-                self.model.objects.get_or_create(
-                    name=item['name'], unisender_id=item['id'], visible=visible,
-                    field_type=item['type'], sort=item['view_pos'])
+        for item in result:
+            field, create = self.model.objects.get_or_create(name=item['name'])
+            field.unisender_id = item['id']
+            field.sync = True
+            field.visible = True if item['is_visible'] == 1 else False
+            field.field_type = item['type']
+            field.sort = item['view_pos']
+            field.save()
+        self.success_message(
+            _(u'%s полей получено от unisender') % len(result),
+            request=request)
         if error:
-            # TODO last errors
-            pass
+            error_msg = UNISENDER_COMMON_ERRORS.get(fields.get('code'), error)
+            self.log_error(error_msg, request)
         if warning:
-            # TODO last warnings
-            pass
+            self.log_warning(warning, request)
 
 class UnisenderListManager(UnisenderManager):
 

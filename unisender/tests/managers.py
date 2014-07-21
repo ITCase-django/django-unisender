@@ -74,16 +74,18 @@ class FieldManagerTestCase(TestCase):
         self.assertEquals(fields, resulted_fields)
 
     def test__get_and_update_fields(self):
+        Field.objects.create(
+            name='test 1', field_type='string', sort=3)
         self.manager.get_and_update_fields()
         field_1 = Field.objects.get(name='test 1')
         self.assertEquals(field_1.field_type, 'string')
         self.assertEquals(field_1.sort, 1)
-        self.assertFalse(field_1.sync)
+        self.assertTrue(field_1.sync)
         self.assertTrue(field_1.visible)
 
         field_2 = Field.objects.get(name='test 2')
         self.assertEquals(field_2.field_type, 'text')
-        self.assertFalse(field_2.sync)
+        self.assertTrue(field_2.sync)
         self.assertTrue(field_2.visible)
         self.assertEquals(field_2.sort, 3)
 

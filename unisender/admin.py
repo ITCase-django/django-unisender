@@ -10,7 +10,7 @@ from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
     EmailMessage, Campaign)
 
-from unisender.views import GetCampaignStatistic, GetTags
+from unisender.views import GetCampaignStatistic, GetTags, GetFields
 
 unisender_fieldsets = [
     [u'Unisender', {
@@ -58,6 +58,18 @@ class FieldAdmin(UnisenderAdmin):
     list_editable = ('field_type', 'visible', 'sort')
 
     actions = ['delete_selected_fields']
+
+    change_list_template = 'unisender/admin/change_field_list.html'
+
+    def get_urls(self):
+        urls = super(FieldAdmin, self).get_urls()
+        my_urls = patterns('',
+            url(r'get_fields/$',
+             self.admin_site.admin_view(GetFields.as_view()),
+             name='unisender_get_fields',
+             ),
+        )
+        return my_urls + urls
 
     def get_actions(self, request):
         actions = super(FieldAdmin, self).get_actions(request)
