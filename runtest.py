@@ -59,5 +59,6 @@ test_runner = DiscoverRunner(pattern='*.py', failfast=False)
 failures = test_runner.run_tests(['unisender.tests.models', ])
 failures += test_runner.run_tests(['unisender.tests.admin', ])
 failures += test_runner.run_tests(['unisender.tests.managers', ])
+failures += test_runner.run_tests(['unisender.tests.cabinet_links', ])
 if failures:
     sys.exit(failures)
