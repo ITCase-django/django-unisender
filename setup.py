@@ -25,6 +25,8 @@ setup(
     install_requires=[
         'pyunisend',
         'django',
+        'django-filebrowser',
+        'pillow',
         # 'git+git://github.com/ITCase/django-tinymce-4',
         'mock'
     ],

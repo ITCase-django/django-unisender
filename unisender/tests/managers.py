@@ -33,13 +33,14 @@ class TagManagerTestCase(TestCase):
         self.assertEquals(tags, resulted_tags)
 
     def test__get_and_update_tags(self):
+        tag_1 = Tag.objects.create(name='test 1')
+        self.assertFalse(tag_1.sync)
         self.manager.get_and_update_tags()
         tag_1 = Tag.objects.get(unisender_id=1)
-        self.assertEquals(tag_1.name, 'test 1')
-        self.assertFalse(tag_1.sync)
+        self.assertTrue(tag_1.sync)
         tag_2 = Tag.objects.get(unisender_id=2)
         self.assertEquals(tag_2.name, 'test 2')
-        self.assertFalse(tag_2.sync)
+        self.assertTrue(tag_2.sync)
 
 
 class FieldManagerTestCase(TestCase):
@@ -73,16 +74,18 @@ class FieldManagerTestCase(TestCase):
         self.assertEquals(fields, resulted_fields)
 
     def test__get_and_update_fields(self):
+        Field.objects.create(
+            name='test 1', field_type='string', sort=3)
         self.manager.get_and_update_fields()
         field_1 = Field.objects.get(name='test 1')
         self.assertEquals(field_1.field_type, 'string')
         self.assertEquals(field_1.sort, 1)
-        self.assertFalse(field_1.sync)
+        self.assertTrue(field_1.sync)
         self.assertTrue(field_1.visible)
 
         field_2 = Field.objects.get(name='test 2')
         self.assertEquals(field_2.field_type, 'text')
-        self.assertFalse(field_2.sync)
+        self.assertTrue(field_2.sync)
         self.assertTrue(field_2.visible)
         self.assertEquals(field_2.sort, 3)
 
@@ -114,11 +117,13 @@ class ListManagerTestCase(TestCase):
         self.assertEquals(subscribe_list, resulted_list)
 
     def test__get_and_update_subscribe_lists(self):
+        list_1 = SubscribeList.objects.create(title='test 1')
+        self.assertFalse(list_1.sync)
         self.manager.get_and_update_lists()
         list_1 = SubscribeList.objects.get(title='test 1')
-        self.assertFalse(list_1.sync)
+        self.assertTrue(list_1.sync)
         list_2 = SubscribeList.objects.get(title='test 2')
-        self.assertFalse(list_2.sync)
+        self.assertTrue(list_2.sync)
 
 
 class CampaignManagerTestCase(TestCase):
@@ -140,7 +145,7 @@ class CampaignManagerTestCase(TestCase):
 
     def test__get_campaings(self):
         # simple test
-        subscribe_list = self.manager.get_campaings()
+        subscribe_list = self.manager.get_campaigns()
         resulted_list = {
             'result': [
             {'id': 1, 'start_time':

@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 # python imports
 import logging
+import re
 from datetime import datetime
 
 # django imports
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django import forms
 from django.contrib import messages
 from django.db.models.signals import m2m_changed, post_save
 from django.dispatch import receiver
+from django.core.exceptions import ValidationError
+from filebrowser.fields import FileBrowseField
 # third part imports
 from tinymce_4.fields import TinyMCEModelField
 
@@ -95,6 +97,12 @@ class Tag(UnisenderModel):
         verbose_name_plural = _(u'Метки')
 
 
+def validate_field_name_field(value):
+    if not re.match('[a-zA-Z0-9_]+', value):
+        raise ValidationError(
+            u'''Название поля может содержать, только символы английского
+                алфавита цифры и знак подчеркивания''')
+
 class Field(UnisenderModel):
     TYPE_CHOICES = [
         ('string', _(u'строка')),
@@ -102,7 +110,8 @@ class Field(UnisenderModel):
         ('number', _(u'число')),
         ('bool', _(u'да/нет.')),
     ]
-    name = models.CharField(_(u'Поле'), max_length=255)
+    name = models.CharField(_(u'Поле'), max_length=255,
+                            validators=[validate_field_name_field])
     field_type = models.CharField(_(u'Тип поля'), max_length=50,
                                   choices=TYPE_CHOICES,
                                   default=TYPE_CHOICES[0][0])
@@ -245,10 +254,9 @@ class SubscribeList(UnisenderModel):
         '''
         api = self.get_api()
         responce = api.updateList(
-            title=self.title, list_id=self.unisender_id,
+            title=self.title.encode('utf-8'), list_id=self.unisender_id,
             before_subscribe_url=self.before_subscribe_url,
             after_subscribe_url=self.after_subscribe_url)
-        result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
         if warning:
@@ -271,7 +279,7 @@ class SubscribeList(UnisenderModel):
         '''
         api = self.get_api()
         responce = api.createList(
-            title=self.title,
+            title=self.title.encode('utf-8'),
             before_subscribe_url=self.before_subscribe_url,
             after_subscribe_url=self.after_subscribe_url)
         result = responce.get('result')
@@ -305,6 +313,12 @@ class Subscriber(UnisenderModel):
         ('email', _(u'email')),
         ('phone', _(u'телефон')),
     ]
+    DOUBLE_OPTIN_CHOICES = [
+        ('0', '0'),
+        ('1', '1'),
+        ('2', '2'),
+        ('3', '3'),
+    ]
     list_ids = models.ManyToManyField(
         SubscribeList, related_name='subscribers',
         verbose_name=_(u'Списки рассылки'))
@@ -314,7 +328,7 @@ class Subscriber(UnisenderModel):
                                     choices=CONTACT_TYPE,
                                     default=CONTACT_TYPE[0][0])
     contact = models.CharField(_(u'email/телефон'), max_length=255)
-    double_optin = models.SmallIntegerField(
+    double_optin = models.CharField(
         _(u'Число от 0 до 3 - есть ли подтверждённое согласие подписчика'),
         help_text='''Если 0, то мы считаем, что подписчик только высказал
                      желание подписаться, но ещё не подтвердил подписку.
@@ -339,7 +353,8 @@ class Subscriber(UnisenderModel):
 
                     Если 3, то также считается, что у Вас согласие подписчика
                     уже есть, но в случае превышения лимита подписчик
-                    добавляется со статусом «новый». ''', default=1)
+                    добавляется со статусом «новый». ''',
+                    choices=DOUBLE_OPTIN_CHOICES, default=DOUBLE_OPTIN_CHOICES[1][0], max_length=2)
 
     def serialize_fields(self):
         result = {}
@@ -366,7 +381,6 @@ class Subscriber(UnisenderModel):
         http://www.unisender.com/ru/help/api/subscribe/
         '''
         api = self.get_api()
-        params = {}
         responce = api.subscribe(
             fields=self.serialize_fields(),
             list_ids=self.serialize_list_id(), overwrite=1,
@@ -419,7 +433,7 @@ class Subscriber(UnisenderModel):
         list_ids = exclude_list if exclude_list else self.serialize_list_id()
         responce = api.exclude(
             contact=self.contact,
-            list_ids=self.serialize_list_id(), contact_type=self.contact_type)
+            list_ids=list_ids, contact_type=self.contact_type)
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
@@ -490,7 +504,6 @@ class MessageModel(UnisenderModel):
 
 
 class EmailMessage(MessageModel):
-    # TODO attachments
     LANGUAGES = [
         ('ru', _(u'русский')),
         ('en', _(u'английский')),
@@ -517,10 +530,11 @@ class EmailMessage(MessageModel):
     subject = models.CharField(_(u'Тема'), max_length=255)
     body = TinyMCEModelField(_(u'Текст письма в формате HTML'))
     list_id = models.ForeignKey(SubscribeList, verbose_name=u'Список рассылки',
-                                related_name='emails')
+                                related_name='emails',
+                                on_delete=models.SET_NULL, null=True)
     tag = models.ForeignKey(
         Tag, related_name='emails', verbose_name=u'Метка', blank=True,
-        null=True)
+        null=True, on_delete=models.SET_NULL)
     lang = models.CharField(_(u'Язык'), max_length=50,
                             choices=LANGUAGES,
                             default=LANGUAGES[0][0])
@@ -578,6 +592,14 @@ class EmailMessage(MessageModel):
             params['series_time'] = self.series_time.strftime('%H:%M')
         if self.categories:
             params['categories'] = self.categories
+        attachments = self.attachments.all()
+
+        if attachments:
+            attachments_dict = {}
+            for item in attachments:
+                attachments_dict[item.filename.filename] = ''.join(
+                    ''.join(s) for s in tuple(open(item.filename.path_full, 'r')))
+            params['attachments'] = attachments_dict
         api = self.get_api()
         responce = api.createEmailMessage(**params)
         result = responce.get('result')
@@ -602,6 +624,16 @@ class EmailMessage(MessageModel):
         ordering = ('subject',)
         verbose_name = _(u'Email сообщение')
         verbose_name_plural = _(u'Email сообщениея')
+
+
+class Attachment(models.Model):
+    email_message = models.ForeignKey(
+        EmailMessage, verbose_name=u'Сообщение', related_name='attachments')
+    filename = FileBrowseField(_(u'Прикрепленный файл'), max_length=255)
+
+    class Meta:
+        verbose_name = _(u'Вложение')
+        verbose_name_plural = _(u'Вложения')
 
 
 class SmsMessage(MessageModel):
@@ -631,8 +663,11 @@ class Campaign(UnisenderModel):
         ('canceled',
          u'рассылка отменена (обычно из-за нехватки денег или по желанию пользователя)'),
     ]
-    name = models.CharField(_(u'Название рассылки'), max_length=255)
-    email_message = models.ForeignKey(EmailMessage, verbose_name=u'Сообщение')
+
+    name = models.CharField(
+        _(u'Название рассылки'), max_length=255, blank=True, null=True)
+    email_message = models.ForeignKey(
+        EmailMessage, verbose_name=u'Сообщение', null=True)
     start_time = models.DateTimeField(
         _(u'Дата и время запуска рассылки'), blank=True, null=True)
     track_read = models.CharField(
@@ -876,7 +911,12 @@ class Campaign(UnisenderModel):
             self.log_error(request)
 
     def __unicode__(self):
-        return unicode(self.name)
+        name = self.pk
+        if self.name:
+            name = self.name
+        elif self.unisender_id:
+            name = self.unisender_id
+        return unicode(name)
 
     class Meta:
         ordering = ('name',)

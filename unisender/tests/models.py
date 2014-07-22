@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 from django.test import TestCase
+from django.core.exceptions import ValidationError
 
 from mock import patch
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
-    EmailMessage, Campaign,)
+    EmailMessage, Campaign, validate_field_name_field)
 
 
 from unisender.error_codes import UNISENDER_COMMON_ERRORS
@@ -69,6 +70,10 @@ class FieldModelTestCase(TestCase):
     @patch.object(Field, 'get_api', unisender_test_api_correct_values)
     def test__delete_field_error_correct_values(self):
         self.field.delete_field()
+
+    def test__validate_field_name_field(self):
+        self.assertRaises(ValidationError, validate_field_name_field, u'тест')
+        self.assertIsNone(validate_field_name_field('test'))
 
 
 class SubscribeListTestCase(TestCase):

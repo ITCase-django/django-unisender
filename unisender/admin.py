@@ -3,12 +3,16 @@ from django.contrib import admin
 from django.conf.urls import patterns, url
 from django.contrib import messages
 from django.utils.translation import ugettext_lazy as _
+from django import forms
+from django.core.exceptions import ValidationError
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
-    EmailMessage, Campaign)
+    EmailMessage, Campaign, Attachment)
 
-from unisender.views import GetCampaignStatistic
+from unisender.views import (
+        GetCampaignStatistic, GetTags, GetFields, GetLists, GetCampaigns
+    )
 
 unisender_fieldsets = [
     [u'Unisender', {
@@ -29,6 +33,17 @@ class TagAdmin(UnisenderAdmin):
     list_display = ('__unicode__', 'unisender_id', 'sync', )
     list_display_links = ('__unicode__', )
     search_fields = ['name', ]
+    change_list_template = 'unisender/admin/change_tag_list.html'
+
+    def get_urls(self):
+        urls = super(TagAdmin, self).get_urls()
+        my_urls = patterns('',
+            url(r'get_tags/$',
+             self.admin_site.admin_view(GetTags.as_view()),
+             name='unisender_get_tags',
+             ),
+        )
+        return my_urls + urls
 
 admin.site.register(Tag, TagAdmin)
 
@@ -45,6 +60,18 @@ class FieldAdmin(UnisenderAdmin):
     list_editable = ('field_type', 'visible', 'sort')
 
     actions = ['delete_selected_fields']
+
+    change_list_template = 'unisender/admin/change_field_list.html'
+
+    def get_urls(self):
+        urls = super(FieldAdmin, self).get_urls()
+        my_urls = patterns('',
+            url(r'get_fields/$',
+             self.admin_site.admin_view(GetFields.as_view()),
+             name='unisender_get_fields',
+             ),
+        )
+        return my_urls + urls
 
     def get_actions(self, request):
         actions = super(FieldAdmin, self).get_actions(request)
@@ -83,6 +110,17 @@ class SubscribeListAdmin(UnisenderAdmin):
                     'before_subscribe_url', 'after_subscribe_url')
     list_display_links = ('__unicode__', )
     search_fields = ['title', ]
+    change_list_template = 'unisender/admin/change_subscriber_list_list.html'
+
+    def get_urls(self):
+        urls = super(SubscribeListAdmin, self).get_urls()
+        my_urls = patterns('',
+            url(r'get_lists/$',
+             self.admin_site.admin_view(GetLists.as_view()),
+             name='unisender_get_lists',
+             ),
+        )
+        return my_urls + urls
 
     def save_model(self, request, obj, form, change):
         if obj.unisender_id:
@@ -133,7 +171,15 @@ class SubscriberAdmin(UnisenderAdmin):
         readonly_fields = super(SubscriberAdmin, self).get_readonly_fields(
             request, obj=obj)
         if obj and obj.sync:
-            readonly_fields += ('contact', 'contact_type')
+            readonly_fields += ['contact', 'contact_type']
+        else:
+            # save and add another button behavior
+            readonly_fields = list(set(readonly_fields))
+            if 'contact' in readonly_fields:
+                readonly_fields.remove('contact')
+            if 'contact_type' in readonly_fields:
+                readonly_fields.remove('contact_type')
+
         return readonly_fields
 
     def save_model(self, request, obj, form, change):
@@ -164,6 +210,32 @@ auto_send_fieldset = [[u'Автоматическая отправка', {
             'fields': ['series_day', 'series_time', ]
         }]]
 
+
+class EmailMessageForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(EmailMessageForm, self).__init__(*args, **kwargs)
+        if not self.instance.unisender_id:
+            self.fields['list_id'].required = True
+
+
+class AttachmentInline(admin.TabularInline):
+    model = Attachment
+    extra = 0
+
+class AttachmentInlineReadOnly(AttachmentInline):
+    can_delete = False
+
+    def has_add_permission(self, request):
+        return False
+
+    def get_readonly_fields(self, request, obj=None):
+        result = list(set(
+                [field.name for field in self.opts.local_fields] +
+                [field.name for field in self.opts.local_many_to_many]
+            ))
+        result.remove('id')
+        return result
+
 class EmailMessageAdmin(UnisenderAdmin):
     fieldsets = unisender_fieldsets + [
         [u'Сообщение', {
@@ -176,6 +248,8 @@ class EmailMessageAdmin(UnisenderAdmin):
         '__unicode__', 'sender_name', 'subject', 'unisender_id', 'sync')
     list_display_links = ('__unicode__', )
     search_fields = ['sender_name', 'subject', 'body', ]
+
+    form = EmailMessageForm
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.sync:
@@ -199,10 +273,18 @@ class EmailMessageAdmin(UnisenderAdmin):
             }]] + auto_send_fieldset
         return field_sets
 
-    def save_model(self, request, obj, form, change):
+    def response_add(self, request, obj):
         if not obj.unisender_id:
             obj.unisender_id = obj.create_email_message(request)
         obj.save()
+        return super(EmailMessageAdmin, self).response_add(request, obj)
+
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            instance.user = request.user
+            instance.save()
+        formset.save_m2m()
 
     actions = ['delete_selected_emails']
 
@@ -220,10 +302,38 @@ class EmailMessageAdmin(UnisenderAdmin):
         obj.delete_message(request)
         obj.delete()
 
+    def add_view(self, request, form_url='', extra_context=None):
+        self.inlines = [AttachmentInline, ]
+        return super(EmailMessageAdmin, self).add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        self.inlines = [AttachmentInlineReadOnly, ]
+        return super(EmailMessageAdmin, self).change_view(request, object_id, form_url, extra_context)
+
 admin.site.register(EmailMessage, EmailMessageAdmin)
 
 
 # admin.site.register(SmsMessage)
+
+
+class CampaignAdminForm(forms.ModelForm):
+
+    def clean_contacts(self):
+        email_message = self.cleaned_data.get('email_message', None)
+        if not email_message:
+            return self.cleaned_data['contacts']
+        if self.cleaned_data['contacts'] or (email_message and email_message.list_id):
+            return self.cleaned_data['contacts']
+        else:
+            raise ValidationError(
+                u'''У выбранного сообщения отсутствует список контактов,
+                    вам необходимо выбрать контакты которым будет осуществлена рассылка''')
+
+    def __init__(self, *args, **kwargs):
+        super(CampaignAdminForm, self).__init__(*args, **kwargs)
+        if not self.instance.unisender_id:
+            self.fields['name'].required = True
+            self.fields['email_message'].required = True
 
 
 class CampaignAdmin(UnisenderAdmin):
@@ -236,11 +346,13 @@ class CampaignAdmin(UnisenderAdmin):
         })]
 
     list_display = (
-        '__unicode__', 'name', 'email_message', 'unisender_id', 'sync')
-    list_display_links = ('__unicode__', )
+        '__unicode__', 'email_message', 'unisender_id', 'sync')
+    list_display_links = ('__unicode__',  'email_message', 'unisender_id')
     search_fields = ['name', 'contacts', ]
-
     filter_horizontal = ['contacts']
+    change_list_template = 'unisender/admin/change_campaign_list.html'
+
+    form = CampaignAdminForm
 
     def get_readonly_fields(self, request, obj=None):
         if obj and obj.sync:
@@ -295,6 +407,11 @@ class CampaignAdmin(UnisenderAdmin):
              self.admin_site.admin_view(GetCampaignStatistic.as_view()),
              name='unisender_campaign_get_statistic',
              ),
+            url(r'get_campaigns/$',
+             self.admin_site.admin_view(GetCampaigns.as_view()),
+             name='unisender_get_campaigns',
+             ),
+
         )
         return my_urls + urls
 
@@ -304,6 +421,7 @@ class CampaignAdmin(UnisenderAdmin):
         if not obj.unisender_id:
             obj.unisender_id = obj.create_campaign(request)
         obj.save()
+
 
     actions = ['delete_selected_campaigns']
 

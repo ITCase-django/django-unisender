@@ -5,6 +5,7 @@ from django.core.urlresolvers import reverse
 from django.test.client import RequestFactory
 from django.contrib.admin.sites import AdminSite
 from django.contrib import messages
+from django.contrib.messages.storage.fallback import FallbackStorage
 
 from mock import Mock, patch
 
@@ -13,7 +14,7 @@ from unisender.models import (
 
 from unisender.admin import (
     FieldAdmin, SubscribeListAdmin, SubscriberAdmin, EmailMessageAdmin,
-    CampaignAdmin
+    CampaignAdmin, AttachmentInline, AttachmentInlineReadOnly
 )
 from .mock_api import mock_messages
 
@@ -380,7 +381,7 @@ class SubscriberAdminTestCase(TestCase):
                      'fields-TOTAL_FORMS': 0,
                      'fields-INITIAL_FORMS': 0,
                      'fields-MAX_NUM_FORMS': 1000,
-                     'double_optin': 1,
+                     'double_optin': '1',
                      }
         response = self.client.post(url, post_data)
         self.assertRedirects(
@@ -477,6 +478,10 @@ class EmailMessageAdminTestCase(TestCase):
         site = AdminSite()
         self.admin = EmailMessageAdmin(EmailMessage, site)
         self.request = RequestFactory().get(reverse('admin:index'))
+        self.request.user = self.user
+        setattr(self.request, 'session', 'session')
+        messages = FallbackStorage(self.request)
+        setattr(self.request, '_messages', messages)
 
     def test_open_unisender_page(self):
         """Открываем страницу email сообщений в админке"""
@@ -502,43 +507,16 @@ class EmailMessageAdminTestCase(TestCase):
                      'generate_text': 1,
                      'wrap_type': 'skip',
                      'double_optin': 1,
-                     'series_time': '11:00'
+                     'series_time': '11:00',
+                     'attachments-TOTAL_FORMS': 0,
+                     'attachments-INITIAL_FORMS': 0,
+                     'attachments-MAX_NUM_FORMS': 1000,
                      }
         response = self.client.post(url, post_data)
         self.assertRedirects(
             response, reverse('admin:unisender_emailmessage_changelist'))
         self.assertEqual(
             EmailMessage.objects.count(), start_subscriber_count + 1)
-
-    def test_update_email_message(self):
-        """Редактируем email сообщение"""
-        subscribe_list = SubscribeList.objects.create(title='test')
-        email = EmailMessage.objects.create(
-            sender_name='test', sender_email='mail@example.com', subject='test',
-            body='test', lang='ru', generate_text=1, wrap_type='skip',
-            list_id=subscribe_list
-        )
-        url = reverse('admin:unisender_emailmessage_change', args=(email.pk,))
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-        csrf = get_csrf_token(response)
-        post_data = {'list_id': subscribe_list.pk,
-                     'csrfmiddlewaretoken': csrf,
-                     'sender_name': 'test',
-                     'sender_email': 'mail-2@example.com',
-                     'subject': 'test',
-                     'body': 'test',
-                     'lang': 'ru',
-                     'generate_text': 1,
-                     'wrap_type': 'skip',
-                     'double_optin': 1,
-                     'series_time': '11:00'
-                     }
-        response = self.client.post(url, post_data)
-        self.assertRedirects(
-            response, reverse('admin:unisender_emailmessage_changelist'))
-        self.assertTrue(EmailMessage.objects.filter(
-            sender_email='mail-2@example.com').exists())
 
     def test_delete_email_message(self):
         """Удаляем email сообщение"""
@@ -559,6 +537,19 @@ class EmailMessageAdminTestCase(TestCase):
         self.assertRedirects(
             response, reverse('admin:unisender_emailmessage_changelist'))
         self.assertEqual(EmailMessage.objects.count(), start_unisender_count)
+
+    def test_inlines_readonly(self):
+        '''Проверяем что вложения становятся readonly'''
+        self.admin.add_view(self.request)
+        self.assertListEqual(self.admin.inlines, [AttachmentInline, ])
+        subscribe_list = SubscribeList.objects.create(title='test')
+        message = EmailMessage.objects.create(
+            sender_name='test', sender_email='mail@example.com', subject='test',
+            body='test', lang='ru', generate_text=1, wrap_type='skip',
+            list_id=subscribe_list
+        )
+        self.admin.change_view(self.request, str(message.pk))
+        self.assertListEqual(self.admin.inlines, [AttachmentInlineReadOnly, ])
 
     def test_admin_get_actions(self):
         actions = self.admin.get_actions(self.request)
@@ -590,7 +581,7 @@ class EmailMessageAdminTestCase(TestCase):
             list_id=subscribe_list
         )
         message.create_email_message = Mock(return_value=None)
-        self.admin.save_model(self.request, message, None, None)
+        self.admin.response_add(self.request, message)
         self.assertEqual(
             EmailMessage.objects.count(), start_unisender_count + 1)
         self.assertTrue(message.create_email_message.called)
@@ -602,7 +593,7 @@ class EmailMessageAdminTestCase(TestCase):
             list_id=subscribe_list, unisender_id=1
         )
         message_2.create_email_message = Mock(return_value=None)
-        self.admin.save_model(self.request, message_2, None, None)
+        self.admin.response_add(self.request, message_2)
         self.assertEqual(EmailMessage.objects.count(),
                          start_unisender_count + 2)
         self.assertFalse(message_2.create_email_message.called)
