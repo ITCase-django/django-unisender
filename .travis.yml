@@ -8,8 +8,8 @@ python:
 
 install:
   - pip install nose coverage coveralls
-  - pip install pyunisend django mock
-  - pip install git+git://github.com/ITCase/django-tinymce-4 
+  - pip install pyunisend django mock django-filebrowser
+  - pip install git+git://github.com/ITCase/django-tinymce-4
 
 script:
 
