@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
-    EmailMessage, Campaign)
+    EmailMessage, Campaign, Attachment)
 
 from unisender.views import (
         GetCampaignStatistic, GetTags, GetFields, GetLists, GetCampaigns
@@ -218,6 +218,24 @@ class EmailMessageForm(forms.ModelForm):
             self.fields['list_id'].required = True
 
 
+class AttachmentInline(admin.TabularInline):
+    model = Attachment
+    extra = 0
+
+class AttachmentInlineReadOnly(AttachmentInline):
+    can_delete = False
+
+    def has_add_permission(self, request):
+        return False
+
+    def get_readonly_fields(self, request, obj=None):
+        result = list(set(
+                [field.name for field in self.opts.local_fields] +
+                [field.name for field in self.opts.local_many_to_many]
+            ))
+        result.remove('id')
+        return result
+
 class EmailMessageAdmin(UnisenderAdmin):
     fieldsets = unisender_fieldsets + [
         [u'Сообщение', {
@@ -255,10 +273,18 @@ class EmailMessageAdmin(UnisenderAdmin):
             }]] + auto_send_fieldset
         return field_sets
 
-    def save_model(self, request, obj, form, change):
+    def response_add(self, request, obj):
         if not obj.unisender_id:
             obj.unisender_id = obj.create_email_message(request)
         obj.save()
+        return super(EmailMessageAdmin, self).response_add(request, obj)
+
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+        for instance in instances:
+            instance.user = request.user
+            instance.save()
+        formset.save_m2m()
 
     actions = ['delete_selected_emails']
 
@@ -275,6 +301,14 @@ class EmailMessageAdmin(UnisenderAdmin):
     def delete_model(self, request, obj):
         obj.delete_message(request)
         obj.delete()
+
+    def add_view(self, request, form_url='', extra_context=None):
+        self.inlines = [AttachmentInline, ]
+        return super(EmailMessageAdmin, self).add_view(request, form_url, extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        self.inlines = [AttachmentInlineReadOnly, ]
+        return super(EmailMessageAdmin, self).change_view(request, object_id, form_url, extra_context)
 
 admin.site.register(EmailMessage, EmailMessageAdmin)
 

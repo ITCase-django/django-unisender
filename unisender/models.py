@@ -7,12 +7,11 @@ from datetime import datetime
 # django imports
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-from django import forms
 from django.contrib import messages
 from django.db.models.signals import m2m_changed, post_save
 from django.dispatch import receiver
 from django.core.exceptions import ValidationError
-
+from filebrowser.fields import FileBrowseField
 # third part imports
 from tinymce_4.fields import TinyMCEModelField
 
@@ -258,7 +257,6 @@ class SubscribeList(UnisenderModel):
             title=self.title.encode('utf-8'), list_id=self.unisender_id,
             before_subscribe_url=self.before_subscribe_url,
             after_subscribe_url=self.after_subscribe_url)
-        result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
         if warning:
@@ -383,7 +381,6 @@ class Subscriber(UnisenderModel):
         http://www.unisender.com/ru/help/api/subscribe/
         '''
         api = self.get_api()
-        params = {}
         responce = api.subscribe(
             fields=self.serialize_fields(),
             list_ids=self.serialize_list_id(), overwrite=1,
@@ -436,7 +433,7 @@ class Subscriber(UnisenderModel):
         list_ids = exclude_list if exclude_list else self.serialize_list_id()
         responce = api.exclude(
             contact=self.contact,
-            list_ids=self.serialize_list_id(), contact_type=self.contact_type)
+            list_ids=list_ids, contact_type=self.contact_type)
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
@@ -507,7 +504,6 @@ class MessageModel(UnisenderModel):
 
 
 class EmailMessage(MessageModel):
-    # TODO attachments
     LANGUAGES = [
         ('ru', _(u'русский')),
         ('en', _(u'английский')),
@@ -596,6 +592,14 @@ class EmailMessage(MessageModel):
             params['series_time'] = self.series_time.strftime('%H:%M')
         if self.categories:
             params['categories'] = self.categories
+        attachments = self.attachments.all()
+
+        if attachments:
+            attachments_dict = {}
+            for item in attachments:
+                attachments_dict[item.filename.filename] = ''.join(
+                    ''.join(s) for s in tuple(open(item.filename.path_full, 'r')))
+            params['attachments'] = attachments_dict
         api = self.get_api()
         responce = api.createEmailMessage(**params)
         result = responce.get('result')
@@ -620,6 +624,16 @@ class EmailMessage(MessageModel):
         ordering = ('subject',)
         verbose_name = _(u'Email сообщение')
         verbose_name_plural = _(u'Email сообщениея')
+
+
+class Attachment(models.Model):
+    email_message = models.ForeignKey(
+        EmailMessage, verbose_name=u'Сообщение', related_name='attachments')
+    filename = FileBrowseField(_(u'Прикрепленный файл'), max_length=255)
+
+    class Meta:
+        verbose_name = _(u'Вложение')
+        verbose_name_plural = _(u'Вложения')
 
 
 class SmsMessage(MessageModel):
