@@ -63,5 +63,6 @@ failures += test_runner.run_tests(['unisender.tests.admin', ])
 failures += test_runner.run_tests(['unisender.tests.managers', ])
 failures += test_runner.run_tests(['unisender.tests.cabinet_links', ])
 failures += test_runner.run_tests(['unisender.tests.views', ])
+failures += test_runner.run_tests(['unisender.tests.mock_api_tests', ])
 if failures:
     sys.exit(failures)
