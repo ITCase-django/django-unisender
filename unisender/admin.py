@@ -10,9 +10,14 @@ from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
     EmailMessage, Campaign, Attachment)
 
+from unisender.unisender_urls import (
+    EMAIL_MESSAGES_LIST, EMAIL_MESSAGES_DETAIL, TAG_LIST, FIELD_LIST,
+    CAMPAIGN_LIST, CAMPAIGN_DETAIL, SUBSCRIBELIST_LIST, SUBSCRIBELIST_DETAIL
+)
+
 from unisender.views import (
-        GetCampaignStatistic, GetTags, GetFields, GetLists, GetCampaigns
-    )
+    GetCampaignStatistic, GetTags, GetFields, GetLists, GetCampaigns
+)
 
 unisender_fieldsets = [
     [u'Unisender', {
@@ -44,6 +49,12 @@ class TagAdmin(UnisenderAdmin):
              ),
         )
         return my_urls + urls
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['unisender_site'] = TAG_LIST
+        return super(TagAdmin, self).changelist_view(request,
+            extra_context=extra_context)
 
 admin.site.register(Tag, TagAdmin)
 
@@ -97,6 +108,12 @@ class FieldAdmin(UnisenderAdmin):
         obj.delete_field(request)
         obj.delete()
 
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['unisender_site'] = FIELD_LIST
+        return super(FieldAdmin, self).changelist_view(request,
+            extra_context=extra_context)
+
 admin.site.register(Field, FieldAdmin)
 
 
@@ -111,6 +128,7 @@ class SubscribeListAdmin(UnisenderAdmin):
     list_display_links = ('__unicode__', )
     search_fields = ['title', ]
     change_list_template = 'unisender/admin/change_subscriber_list_list.html'
+    change_form_template = 'unisender/admin/change_subscriber_list_detail.html'
 
     def get_urls(self):
         urls = super(SubscribeListAdmin, self).get_urls()
@@ -145,6 +163,21 @@ class SubscribeListAdmin(UnisenderAdmin):
     def delete_model(self, request, obj):
         obj.delete_list(request)
         obj.delete()
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['unisender_site'] = SUBSCRIBELIST_LIST
+        return super(SubscribeListAdmin, self).changelist_view(request,
+            extra_context=extra_context)
+
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        instance = self.model.objects.get(pk=object_id)
+        if instance.unisender_id:
+            extra_context['unisender_site'] =\
+                SUBSCRIBELIST_DETAIL + instance.unisender_id
+        return super(SubscribeListAdmin, self).change_view(
+            request, object_id, form_url, extra_context)
 
 admin.site.register(SubscribeList, SubscribeListAdmin)
 
@@ -248,7 +281,8 @@ class EmailMessageAdmin(UnisenderAdmin):
         '__unicode__', 'sender_name', 'subject', 'unisender_id', 'sync')
     list_display_links = ('__unicode__', )
     search_fields = ['sender_name', 'subject', 'body', ]
-
+    change_list_template = 'unisender/admin/change_emailmessage_list.html'
+    change_form_template = 'unisender/admin/change_emailmessage.html'
     form = EmailMessageForm
 
     def get_readonly_fields(self, request, obj=None):
@@ -304,11 +338,24 @@ class EmailMessageAdmin(UnisenderAdmin):
 
     def add_view(self, request, form_url='', extra_context=None):
         self.inlines = [AttachmentInline, ]
-        return super(EmailMessageAdmin, self).add_view(request, form_url, extra_context)
+        return super(EmailMessageAdmin, self).add_view(
+            request, form_url, extra_context)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         self.inlines = [AttachmentInlineReadOnly, ]
-        return super(EmailMessageAdmin, self).change_view(request, object_id, form_url, extra_context)
+        extra_context = extra_context or {}
+        instance = self.model.objects.get(pk=object_id)
+        if instance.unisender_id:
+            extra_context['unisender_site'] = \
+                EMAIL_MESSAGES_DETAIL + instance.unisender_id
+        return super(EmailMessageAdmin, self).change_view(
+            request, object_id, form_url, extra_context)
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['unisender_site'] = EMAIL_MESSAGES_LIST
+        return super(EmailMessageAdmin, self).changelist_view(request,
+            extra_context=extra_context)
 
 admin.site.register(EmailMessage, EmailMessageAdmin)
 
@@ -393,6 +440,10 @@ class CampaignAdmin(UnisenderAdmin):
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
         campaign = Campaign.objects.get(pk=object_id)
+        instance = self.model.objects.get(pk=object_id)
+        if instance.unisender_id:
+            extra_context['unisender_site'] =\
+                CAMPAIGN_DETAIL + instance.unisender_id
         if campaign.sync:
             extra_context['show_get_statistic_button'] = True
             extra_context['pk'] = object_id
@@ -439,5 +490,11 @@ class CampaignAdmin(UnisenderAdmin):
         messages.warning(
             request, _(u'Объект был удален из БД сайта, но остался в БД unisender вам необходимо удалить его самостоятельно оттуда'))
         obj.delete()
+
+    def changelist_view(self, request, extra_context=None):
+        extra_context = extra_context or {}
+        extra_context['unisender_site'] = CAMPAIGN_LIST
+        return super(CampaignAdmin, self).changelist_view(request,
+            extra_context=extra_context)
 
 admin.site.register(Campaign, CampaignAdmin)

@@ -16,6 +16,12 @@ from unisender.admin import (
     FieldAdmin, SubscribeListAdmin, SubscriberAdmin, EmailMessageAdmin,
     CampaignAdmin, AttachmentInline, AttachmentInlineReadOnly
 )
+
+from unisender.unisender_urls import (
+    EMAIL_MESSAGES_LIST, EMAIL_MESSAGES_DETAIL, TAG_LIST, FIELD_LIST,
+    CAMPAIGN_LIST, CAMPAIGN_DETAIL, SUBSCRIBELIST_LIST, SUBSCRIBELIST_DETAIL
+)
+
 from .mock_api import mock_messages
 
 
@@ -66,6 +72,8 @@ class TagAdminTestCase(TestCase):
         """Открываем страницу Tags в админке"""
         response = self.client.get(reverse('admin:unisender_tag_changelist'))
         self.assertEqual(response.status_code, 200)
+        self.assertIn('unisender_site', response.context)
+        self.assertEqual(response.context['unisender_site'], TAG_LIST)
 
     def test_add_tag(self):
         """Добавляем тэг"""
@@ -131,6 +139,8 @@ class FieldAdminTestCase(TestCase):
         """Открываем страницу Tags в админке"""
         response = self.client.get(reverse('admin:unisender_field_changelist'))
         self.assertEqual(response.status_code, 200)
+        self.assertIn('unisender_site', response.context)
+        self.assertEqual(response.context['unisender_site'], FIELD_LIST)
 
     def test_add_field(self):
         """Добавляем поле"""
@@ -237,10 +247,12 @@ class SubscribeListAdminTestCase(TestCase):
         self.request = RequestFactory().get(reverse('admin:index'))
 
     def test_open_unisender_page(self):
-        """Открываем страницу Tags в админке"""
+        """Открываем страницу subscribeList в админке"""
         response = self.client.get(
             reverse('admin:unisender_subscribelist_changelist'))
         self.assertEqual(response.status_code, 200)
+        self.assertIn('unisender_site', response.context)
+        self.assertEqual(response.context['unisender_site'], SUBSCRIBELIST_LIST)
 
     def test_add_subscribe_list(self):
         """Добавляем список рассылки"""
@@ -260,11 +272,16 @@ class SubscribeListAdminTestCase(TestCase):
 
     def test_update_subscribe_list(self):
         """Редактируем список рассылки"""
-        subscribe_list = SubscribeList.objects.create(title='test')
+        subscribe_list = SubscribeList.objects.create(
+            title='test', unisender_id=1)
         url = reverse(
             'admin:unisender_subscribelist_change', args=(subscribe_list.pk,))
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        self.assertIn('unisender_site', response.context)
+        self.assertEqual(
+            response.context['unisender_site'],
+            SUBSCRIBELIST_DETAIL + str(subscribe_list.unisender_id))
         csrf = get_csrf_token(response)
         post_data = {'title': u'test_subscribe_list',
                      'csrfmiddlewaretoken': csrf,
@@ -488,6 +505,8 @@ class EmailMessageAdminTestCase(TestCase):
         response = self.client.get(
             reverse('admin:unisender_emailmessage_changelist'))
         self.assertEqual(response.status_code, 200)
+        self.assertIn('unisender_site', response.context)
+        self.assertEqual(response.context['unisender_site'], EMAIL_MESSAGES_LIST)
 
     def test_add_email_message(self):
         """Добавляем email сообщение через админку"""
@@ -517,6 +536,21 @@ class EmailMessageAdminTestCase(TestCase):
             response, reverse('admin:unisender_emailmessage_changelist'))
         self.assertEqual(
             EmailMessage.objects.count(), start_subscriber_count + 1)
+
+    def test_update_email_message(self):
+        """Редактируем сообщение через админку"""
+        subscribe_list = SubscribeList.objects.create(title='test')
+        message = EmailMessage.objects.create(
+            sender_name='test', sender_email='mail@example.com', subject='test',
+            body='test', lang='ru', generate_text=1, wrap_type='skip',
+            list_id=subscribe_list, unisender_id=1
+        )
+        url = reverse('admin:unisender_emailmessage_change', args=(message.pk,))
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('unisender_site', response.context)
+        self.assertEqual(response.context['unisender_site'],
+                         EMAIL_MESSAGES_DETAIL + str(message.unisender_id))
 
     def test_delete_email_message(self):
         """Удаляем email сообщение"""
@@ -690,10 +724,12 @@ class CampaignAdminTestCase(TestCase):
         self.request.user = self.user
 
     def test_open_unisender_page(self):
-        """Открываем страницу подписчиков в админке"""
+        """Открываем страницу рассылки в админке"""
         response = self.client.get(
             reverse('admin:unisender_campaign_changelist'))
         self.assertEqual(response.status_code, 200)
+        self.assertIn('unisender_site', response.context)
+        self.assertEqual(response.context['unisender_site'], CAMPAIGN_LIST)
 
     def test_add_campaign(self):
         """Добавляем рассылку через админку"""
@@ -717,11 +753,14 @@ class CampaignAdminTestCase(TestCase):
     def test_update_campaign(self):
         """Редактируем рассылку"""
         campaign = Campaign.objects.create(
-            name='test', email_message=self.message)
+            name='test', email_message=self.message, unisender_id=1)
         url = reverse(
             'admin:unisender_campaign_change', args=(campaign.pk,))
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        self.assertIn('unisender_site', response.context)
+        self.assertEqual(response.context['unisender_site'],
+                         CAMPAIGN_DETAIL + str(campaign.unisender_id))
         csrf = get_csrf_token(response)
         post_data = {'csrfmiddlewaretoken': csrf,
                      'name': 'test-2',
