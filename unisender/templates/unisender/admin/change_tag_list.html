@@ -8,6 +8,7 @@
                 {{ block.super }}
             {% endblock %}
             <li><a href="{% url 'admin:unisender_get_tags' %}" class="grp-state-focus">Получить метки с сайта unisender</a></li>
+            <li><a href="{{ unisender_site }}" class="grp-state-focus">Просмотр меток на сайте unisender</a></li>
         </ul>
     {% endif %}
 {% endblock %}

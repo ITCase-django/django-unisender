@@ -7,8 +7,7 @@
             {% block object-tools-items %}
                 {{ block.super }}
             {% endblock %}
-            <li><a href="{% url 'admin:unisender_get_lists' %}" class="grp-state-focus">Получить списки с сайта unisender</a></li>
-            <li><a href="{{ unisender_site }}" class="grp-state-focus">Просмотр списков на сайте unisender</a></li>
+            <li><a href="{{ unisender_site }}" class="grp-state-focus">Просмотр сообщений на сайте unisender</a></li>
         </ul>
     {% endif %}
 {% endblock %}
