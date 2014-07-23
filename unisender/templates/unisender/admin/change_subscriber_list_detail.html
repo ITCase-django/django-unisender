@@ -1,0 +1,16 @@
+{% extends "admin/change_form.html" %}
+
+<!-- LOADING -->
+{% load i18n %}
+
+
+<!-- OBJECT TOOLS -->
+{% block object-tools-items %}
+    {{ block.super }}
+    {% if show_get_statistic_button %}
+        <li><a href="{% url 'admin:unisender_campaign_get_statistic' pk=pk %}">{% trans "Получить/обновить статистику" %}</a></li>
+    {% endif %}
+    {% if unisender_site %}
+        <li><a href="{{ unisender_site }}" class="grp-state-focus">Просмотр списка на сайте unisender</a></li>
+    {% endif %}
+{% endblock %}
