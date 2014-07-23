@@ -51,7 +51,9 @@ settings.configure(DEBUG=True,
                    'django.contrib.auth.middleware.AuthenticationMiddleware',
                    'django.contrib.messages.middleware.MessageMiddleware',
                    ),
-                   MESSAGE_STORAGE = 'django.contrib.messages.storage.fallback.FallbackStorage'
+                   MESSAGE_STORAGE = 'django.contrib.messages.storage.fallback.FallbackStorage',
+                   TIME_ZONE = 'UTC',
+                   USE_TZ = True
                    )
 
 from django.test.runner import DiscoverRunner

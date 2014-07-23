@@ -744,6 +744,9 @@ class CampaignAdminTestCase(TestCase):
                      'track_read': 0,
                      'track_links': 0,
                      'track_ga': 0,
+                     'visited_links-TOTAL_FORMS': 0,
+                     'visited_links-INITIAL_FORMS': 0,
+                     'visited_links-MAX_NUM_FORMS': 0,
                      }
         response = self.client.post(url, post_data)
         self.assertRedirects(
@@ -768,6 +771,9 @@ class CampaignAdminTestCase(TestCase):
                      'track_read': 0,
                      'track_links': 0,
                      'track_ga': 0,
+                     'visited_links-TOTAL_FORMS': 0,
+                     'visited_links-INITIAL_FORMS': 0,
+                     'visited_links-MAX_NUM_FORMS': 0,
                      }
         response = self.client.post(url, post_data)
         self.assertRedirects(

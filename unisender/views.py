@@ -17,6 +17,7 @@ class GetCampaignStatistic(RedirectView):
         campaign.get_campaign_status()
         if campaign.get_last_error() is None:
             campaign.get_campaign_agregate_status()
+            campaign.get_visited_links()
         campaign.save()
         self.url = reverse_lazy(
             'admin:unisender_campaign_change', args=(self.kwargs['pk']))

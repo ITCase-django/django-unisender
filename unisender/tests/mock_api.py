@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 def unisender_test_api(UnisenderModel):
     class UnisenderMockAPI(object):
 
@@ -48,6 +49,23 @@ def unisender_test_api(UnisenderModel):
         def getCampaignAggregateStats(self, **kwargs):
             return {'result': {'total': 241, 'data': {
                 'ok_read': 239, 'err_will_retry': 2}}
+            }
+
+        def getVisitedLinks(self, **kwargs):
+            return {
+                'result': {
+                    'fields': ['email', 'url', 'request_time', 'ip', 'count'],
+                    'data': [
+                        ['one@gmail.com', 'http://yandex.ru',
+                            '2011-01-27 09:38:01', '127.0.0.1', '1'],
+                        ['one@gmail.com', 'http://yandex.ru',
+                            '2011-01-27 09:38:01', '127.0.0.1', '1'],
+                        ['two@hotmail.com', 'http://google.com',
+                         '2011-01-27 09:38:02', '127.0.0.1', '2'],
+                        ['three@yandex.ru', 'http://gmail.com',
+                         '2011-01-27 09:38:03', '127.0.0.1', '3'],
+                    ]
+                }
             }
 
     return UnisenderMockAPI()
@@ -100,6 +118,9 @@ def unisender_test_api_errors(UnisenderModel):
         def getCampaignAggregateStats(self, **kwargs):
             return self.error_result
 
+        def getVisitedLinks(self, **kwargs):
+            return self.error_result
+
     return UnisenderMockAPI()
 
 
@@ -130,7 +151,7 @@ def unisender_test_api_correct_values(UnisenderModel):
 
         def updateField(self, **kwargs):
             requirement_fields = ['id']
-            fields = ['name', 'type', 'is_visible', 'view_pos',]
+            fields = ['name', 'type', 'is_visible', 'view_pos', ]
             self.all_requirement_fields_present(requirement_fields, kwargs)
             self.not_documented_fields_not_present(
                 requirement_fields, fields, kwargs)
@@ -232,12 +253,22 @@ def unisender_test_api_correct_values(UnisenderModel):
                 requirement_fields, [], kwargs)
             return {}
 
+        def getVisitedLinks(self, **kwargs):
+            requirement_fields = ['campaign_id',]
+            fields = ['group',]
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, fields, kwargs)
+            return {}
+
     return UnisenderMockAPI()
+
 
 def unisender_test_empty_api(UnisenderModel):
     class UnisenderMockAPI(object):
         pass
     return UnisenderMockAPI()
+
 
 def mock_messages(request, message):
     return None

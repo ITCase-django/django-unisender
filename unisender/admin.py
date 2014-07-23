@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
-    EmailMessage, Campaign, Attachment)
+    EmailMessage, Campaign, Attachment, VisitedLink)
 
 from unisender.unisender_urls import (
     EMAIL_MESSAGES_LIST, EMAIL_MESSAGES_DETAIL, TAG_LIST, FIELD_LIST,
@@ -383,6 +383,23 @@ class CampaignAdminForm(forms.ModelForm):
             self.fields['email_message'].required = True
 
 
+class CampaignVisitedLinksInline(admin.TabularInline):
+    model = VisitedLink
+    extra = 0
+    can_delete = False
+    fields = ('email', 'ip', 'url', 'request_time', 'count')
+
+    def has_add_permission(self, request):
+        return False
+
+    def get_readonly_fields(self, request, obj=None):
+        result = list(set(
+                [field.name for field in self.opts.local_fields] +
+                [field.name for field in self.opts.local_many_to_many]
+            ))
+        result.remove('id')
+        return result
+
 class CampaignAdmin(UnisenderAdmin):
     change_form_template = 'unisender/admin/change_campaign.html'
     fieldsets = unisender_fieldsets + [
@@ -398,6 +415,7 @@ class CampaignAdmin(UnisenderAdmin):
     search_fields = ['name', 'contacts', ]
     filter_horizontal = ['contacts']
     change_list_template = 'unisender/admin/change_campaign_list.html'
+    inlines = [CampaignVisitedLinksInline, ]
 
     form = CampaignAdminForm
 

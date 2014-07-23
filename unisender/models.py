@@ -866,12 +866,47 @@ class Campaign(UnisenderModel):
             self.last_error = error
             self.log_error(request)
 
-    def get_visited_links(self):
+    def get_visited_links(self, request=None):
         '''
-        # issue 23 делаем потом
         http://www.unisender.com/ru/help/api/getVisitedLinks/
         '''
-        pass
+        params = {'campaign_id': self.unisender_id,
+                  'group': '1',}
+        api = self.get_api()
+        responce = api.getVisitedLinks(**params)
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
+        if result:
+            self.last_error = None
+            self.sync = True
+            fields = result['fields']
+            data = result.get('data')
+            if data:
+                self.visited_links.all().delete()
+                for link_list in data:
+                    result_dict = {
+                    item[0]:item[1] for item in zip(fields, link_list)}
+                    link, created = VisitedLink.objects.get_or_create(
+                        campaign=self, email=result_dict['email'],
+                        url=result_dict['url'], ip=result_dict.get('ip'))
+                    request_time = result_dict.get('request_time')
+                    if request_time:
+                        link.request_time = datetime.strptime(request_time,
+                            '%Y-%m-%d %H:%M:%S')
+                    if created:
+                        link.count = result_dict.get('count')
+                    else:
+                        link.count += int(result_dict.get('count', '0'))
+                    link.save()
+                self.success_message(
+                    _(u'Информация о посещенных ссылках получена от unisender'),
+                    request=request)
+        if error:
+            self.last_error = error
+            self.log_error(request)
 
     def serrialize_contacts(self):
         return ','.join(str(x) for x in self.contacts.all().values_list(
@@ -923,6 +958,21 @@ class Campaign(UnisenderModel):
         verbose_name = _(u'Рассылка')
         verbose_name_plural = _(u'Рассылки')
 
+
+class VisitedLink(models.Model):
+    campaign = models.ForeignKey(
+        Campaign, verbose_name=u'Рассылка', related_name='visited_links')
+    email = models.CharField(_(u'email'), max_length=255, blank=True)
+    ip = models.CharField(_(u'ip пользователя'), max_length=255, blank=True)
+    url = models.CharField(_(u'url'), max_length=255, blank=True)
+    request_time = models.DateTimeField(
+        _(u'Время посещения'), blank=True, null=True)
+    count = models.SmallIntegerField(
+        _(u'Количетсво посещений'), blank=True, null=True)
+
+    class Meta:
+        verbose_name = _(u'Посещенная ссылка')
+        verbose_name_plural = _(u'Посещенные ссылки')
 # TODO
 #  http://www.unisender.com/ru/help/api/sendEmail/
 #  http://www.unisender.com/ru/help/api/checkEmail/
