@@ -540,17 +540,17 @@ class EmailMessageAdminTestCase(TestCase):
     def test_update_email_message(self):
         """Редактируем сообщение через админку"""
         subscribe_list = SubscribeList.objects.create(title='test')
-        message = EmailMessage.objects.create(
+        email = EmailMessage.objects.create(
             sender_name='test', sender_email='mail@example.com', subject='test',
             body='test', lang='ru', generate_text=1, wrap_type='skip',
-            list_id=subscribe_list, unisender_id=1
+            list_id=subscribe_list, unisender_id=1, sync=True
         )
-        url = reverse('admin:unisender_emailmessage_change', args=(message.pk,))
+        url = reverse('admin:unisender_emailmessage_change', args=(email.pk,))
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertIn('unisender_site', response.context)
         self.assertEqual(response.context['unisender_site'],
-                         EMAIL_MESSAGES_DETAIL + str(message.unisender_id))
+                         EMAIL_MESSAGES_DETAIL + str(email.unisender_id))
 
     def test_delete_email_message(self):
         """Удаляем email сообщение"""
