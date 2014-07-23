@@ -264,11 +264,5 @@ def unisender_test_api_correct_values(UnisenderModel):
     return UnisenderMockAPI()
 
 
-def unisender_test_empty_api(UnisenderModel):
-    class UnisenderMockAPI(object):
-        pass
-    return UnisenderMockAPI()
-
-
 def mock_messages(request, message):
     return None
