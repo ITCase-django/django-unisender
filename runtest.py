@@ -51,7 +51,9 @@ settings.configure(DEBUG=True,
                    'django.contrib.auth.middleware.AuthenticationMiddleware',
                    'django.contrib.messages.middleware.MessageMiddleware',
                    ),
-                   MESSAGE_STORAGE = 'django.contrib.messages.storage.fallback.FallbackStorage'
+                   MESSAGE_STORAGE = 'django.contrib.messages.storage.fallback.FallbackStorage',
+                   TIME_ZONE = 'UTC',
+                   USE_TZ = True
                    )
 
 from django.test.runner import DiscoverRunner
@@ -59,5 +61,8 @@ test_runner = DiscoverRunner(pattern='*.py', failfast=False)
 failures = test_runner.run_tests(['unisender.tests.models', ])
 failures += test_runner.run_tests(['unisender.tests.admin', ])
 failures += test_runner.run_tests(['unisender.tests.managers', ])
+failures += test_runner.run_tests(['unisender.tests.cabinet_links', ])
+failures += test_runner.run_tests(['unisender.tests.views', ])
+failures += test_runner.run_tests(['unisender.tests.mock_api_tests', ])
 if failures:
     sys.exit(failures)

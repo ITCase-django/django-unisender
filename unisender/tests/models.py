@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from dateutil.tz import tzutc
+from datetime import datetime
 from django.test import TestCase
 from django.core.exceptions import ValidationError
 
@@ -6,7 +8,7 @@ from mock import patch
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
-    EmailMessage, Campaign, validate_field_name_field)
+    EmailMessage, Campaign, validate_field_name_field, VisitedLink)
 
 
 from unisender.error_codes import UNISENDER_COMMON_ERRORS
@@ -366,9 +368,43 @@ class CampaignTestCase(TestCase):
     def test__get_campaign_agregate_status_correct_values(self):
         self.campaign.get_campaign_agregate_status()
 
-
+    @patch.object(Campaign, 'get_api', unisender_test_api)
     def test__get_visited_links(self):
-        # issue 23 делаем потом
-        pass
+        self.campaign.get_visited_links()
+        link_1 = VisitedLink.objects.get(email='one@gmail.com')
+        self.assertEquals(link_1.campaign, self.campaign)
+        self.assertEquals(link_1.count, 2)
+        self.assertEquals(link_1.ip, '127.0.0.1')
+        self.assertEquals(link_1.url, 'http://yandex.ru')
+        naive = datetime.strptime('2011-01-27 09:38:01', '%Y-%m-%d %H:%M:%S')
+        aware = naive.replace(tzinfo=tzutc())
+        self.assertEquals(link_1.request_time, aware)
 
+        link_2 = VisitedLink.objects.get(email='two@hotmail.com')
+        self.assertEquals(link_2.campaign, self.campaign)
+        self.assertEquals(link_2.count, 2)
+        self.assertEquals(link_2.ip, '127.0.0.1')
+        self.assertEquals(link_2.url, 'http://google.com')
+        naive = datetime.strptime('2011-01-27 09:38:02', '%Y-%m-%d %H:%M:%S')
+        aware = naive.replace(tzinfo=tzutc())
+        self.assertEquals(link_2.request_time, aware)
 
+        link_3 = VisitedLink.objects.get(email='three@yandex.ru')
+        self.assertEquals(link_3.campaign, self.campaign)
+        self.assertEquals(link_3.count, 3)
+        self.assertEquals(link_3.ip, '127.0.0.1')
+        self.assertEquals(link_3.url, 'http://gmail.com')
+        naive = datetime.strptime('2011-01-27 09:38:03', '%Y-%m-%d %H:%M:%S')
+        aware = naive.replace(tzinfo=tzutc())
+        self.assertEquals(link_3.request_time, aware)
+
+    @patch.object(Campaign, 'get_api', unisender_test_api_errors)
+    def test__get_visited_links_error(self):
+        self.campaign.get_visited_links()
+        self.assertEquals(
+            UNISENDER_COMMON_ERRORS['invalid_arg'],
+            self.campaign.get_last_error())
+
+    @patch.object(Campaign, 'get_api', unisender_test_api_correct_values)
+    def test__get_visited_links_values(self):
+        self.campaign.get_visited_links()
