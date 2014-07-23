@@ -28,7 +28,8 @@ setup(
         'django-filebrowser',
         'pillow',
         # 'git+git://github.com/ITCase/django-tinymce-4',
-        'mock'
+        'mock',
+        'dateutils'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
