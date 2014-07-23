@@ -22,11 +22,11 @@ class LinkOpenedTestCase(unittest.TestCase):
         self.assertEquals(urllib.urlopen(FIELD_LIST).getcode(), 200)
 
     def test_campaign_list(self):
-        detail_url = CAMPAIGN_LIST + '1'
-        self.assertEquals(urllib.urlopen(detail_url).getcode(), 200)
+        self.assertEquals(urllib.urlopen(CAMPAIGN_LIST).getcode(), 200)
 
     def test_campaign_detail(self):
-        self.assertEquals(urllib.urlopen(CAMPAIGN_DETAIL).getcode(), 200)
+        detail_url = CAMPAIGN_DETAIL + '1'
+        self.assertEquals(urllib.urlopen(detail_url).getcode(), 200)
 
     def test_subscribe_list(self):
         self.assertEquals(urllib.urlopen(SUBSCRIBELIST_LIST).getcode(), 200)
