@@ -8,7 +8,7 @@ from mock import patch
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
-    EmailMessage, Campaign, validate_field_name_field, VisitedLink)
+    EmailMessage, Campaign, validate_field_name_field, VisitedLink, OptinEmail)
 
 
 from unisender.error_codes import UNISENDER_COMMON_ERRORS
@@ -123,6 +123,32 @@ class SubscribeListTestCase(TestCase):
     @patch.object(SubscribeList, 'get_api', unisender_test_api_correct_values)
     def test__create_list_correct_values(self):
         self.list.create_list()
+
+
+class OptinEmailTestCase(TestCase):
+
+    def setUp(self):
+        subscribe_list = SubscribeList.objects.create(
+            title='test', unisender_id=1)
+        self.optin_email = OptinEmail.objects.create(
+            list_id=subscribe_list, sender_name='test',
+            sender_email='test@example.com', subject='test')
+
+    @patch.object(OptinEmail, 'get_api', unisender_test_api)
+    def test__update_optin_email(self):
+        self.assertIsNone(self.optin_email.update_optin_email())
+
+    @patch.object(OptinEmail, 'get_api', unisender_test_api_errors)
+    def test__update_optin_email_error(self):
+        email = self.optin_email
+        email.update_optin_email()
+        self.assertEquals(
+            UNISENDER_COMMON_ERRORS['invalid_arg'], email.get_last_error())
+
+    @patch.object(OptinEmail, 'get_api', unisender_test_api_correct_values)
+    def test__exclude_correct_values(self):
+        email = self.optin_email
+        email.update_optin_email()
 
 
 class SubscriberTestCase(TestCase):

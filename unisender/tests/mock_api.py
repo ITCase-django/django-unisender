@@ -68,6 +68,9 @@ def unisender_test_api(UnisenderModel):
                 }
             }
 
+        def updateOptInEmail(self, **kwargs):
+            return {}
+
     return UnisenderMockAPI()
 
 
@@ -119,6 +122,9 @@ def unisender_test_api_errors(UnisenderModel):
             return self.error_result
 
         def getVisitedLinks(self, **kwargs):
+            return self.error_result
+
+        def updateOptInEmail(self, **kwargs):
             return self.error_result
 
     return UnisenderMockAPI()
@@ -259,6 +265,14 @@ def unisender_test_api_correct_values(UnisenderModel):
             self.all_requirement_fields_present(requirement_fields, kwargs)
             self.not_documented_fields_not_present(
                 requirement_fields, fields, kwargs)
+            return {}
+
+        def updateOptInEmail(self, **kwargs):
+            requirement_fields = ['sender_name', 'sender_email', 'subject',
+                                  'body', 'list_id',]
+            self.all_requirement_fields_present(requirement_fields, kwargs)
+            self.not_documented_fields_not_present(
+                requirement_fields, [], kwargs)
             return {}
 
     return UnisenderMockAPI()
