@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 
 from unisender.models import (
     Tag, Field, SubscribeList, Subscriber, SubscriberFields,
-    EmailMessage, Campaign, Attachment, VisitedLink)
+    EmailMessage, Campaign, Attachment, VisitedLink, OptinEmail)
 
 from unisender.unisender_urls import (
     EMAIL_MESSAGES_LIST, EMAIL_MESSAGES_DETAIL, TAG_LIST, FIELD_LIST,
@@ -43,18 +43,18 @@ class TagAdmin(UnisenderAdmin):
     def get_urls(self):
         urls = super(TagAdmin, self).get_urls()
         my_urls = patterns('',
-            url(r'get_tags/$',
-             self.admin_site.admin_view(GetTags.as_view()),
-             name='unisender_get_tags',
-             ),
-        )
+                           url(r'get_tags/$',
+                               self.admin_site.admin_view(GetTags.as_view()),
+                               name='unisender_get_tags',
+                               ),
+                           )
         return my_urls + urls
 
     def changelist_view(self, request, extra_context=None):
         extra_context = extra_context or {}
         extra_context['unisender_site'] = TAG_LIST
         return super(TagAdmin, self).changelist_view(request,
-            extra_context=extra_context)
+                                                     extra_context=extra_context)
 
 admin.site.register(Tag, TagAdmin)
 
@@ -77,11 +77,11 @@ class FieldAdmin(UnisenderAdmin):
     def get_urls(self):
         urls = super(FieldAdmin, self).get_urls()
         my_urls = patterns('',
-            url(r'get_fields/$',
-             self.admin_site.admin_view(GetFields.as_view()),
-             name='unisender_get_fields',
-             ),
-        )
+                           url(r'get_fields/$',
+                               self.admin_site.admin_view(GetFields.as_view()),
+                               name='unisender_get_fields',
+                               ),
+                           )
         return my_urls + urls
 
     def get_actions(self, request):
@@ -112,10 +112,23 @@ class FieldAdmin(UnisenderAdmin):
         extra_context = extra_context or {}
         extra_context['unisender_site'] = FIELD_LIST
         return super(FieldAdmin, self).changelist_view(request,
-            extra_context=extra_context)
+                                                       extra_context=extra_context)
 
 admin.site.register(Field, FieldAdmin)
 
+
+class OptinEmailInline(admin.StackedInline):
+    model = OptinEmail
+    can_delete = False
+    readonly_fields = ['unisender_id', 'sync', 'get_last_error']
+    fieldsets = [[u'Unisender', {
+                 'fields': ['sync', 'get_last_error']
+                 }],
+                 (u'Письмо', {
+                  'fields': ['sender_name', 'sender_email', 'subject', 'body',]
+                  })]
+
+    # def save_model(self, request, obj, form, change):
 
 class SubscribeListAdmin(UnisenderAdmin):
     fieldsets = unisender_fieldsets + [
@@ -129,15 +142,16 @@ class SubscribeListAdmin(UnisenderAdmin):
     search_fields = ['title', ]
     change_list_template = 'unisender/admin/change_subscriber_list_list.html'
     change_form_template = 'unisender/admin/change_subscriber_list_detail.html'
+    inlines = [OptinEmailInline]
 
     def get_urls(self):
         urls = super(SubscribeListAdmin, self).get_urls()
         my_urls = patterns('',
-            url(r'get_lists/$',
-             self.admin_site.admin_view(GetLists.as_view()),
-             name='unisender_get_lists',
-             ),
-        )
+                           url(r'get_lists/$',
+                               self.admin_site.admin_view(GetLists.as_view()),
+                               name='unisender_get_lists',
+                               ),
+                           )
         return my_urls + urls
 
     def save_model(self, request, obj, form, change):
@@ -168,7 +182,7 @@ class SubscribeListAdmin(UnisenderAdmin):
         extra_context = extra_context or {}
         extra_context['unisender_site'] = SUBSCRIBELIST_LIST
         return super(SubscribeListAdmin, self).changelist_view(request,
-            extra_context=extra_context)
+                                                               extra_context=extra_context)
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
@@ -176,8 +190,21 @@ class SubscribeListAdmin(UnisenderAdmin):
         if instance.unisender_id:
             extra_context['unisender_site'] =\
                 SUBSCRIBELIST_DETAIL + instance.unisender_id
+        self.inlines = [OptinEmailInline, ]
         return super(SubscribeListAdmin, self).change_view(
             request, object_id, form_url, extra_context)
+
+    def add_view(self, request, form_url='', extra_context=None):
+        self.inlines = []
+        return super(SubscribeListAdmin, self).add_view(
+            request, form_url, extra_context)
+
+    def save_related(self, request, form, formsets, change):
+        super(type(self), self).save_related(request, form, formsets, change)
+        if change:
+            instance = formsets[0].queryset[0]
+        instance.update_optin_email(request)
+        instance.save()
 
 admin.site.register(SubscribeList, SubscribeListAdmin)
 
@@ -240,11 +267,12 @@ class SubscriberAdmin(UnisenderAdmin):
 admin.site.register(Subscriber, SubscriberAdmin)
 
 auto_send_fieldset = [[u'Автоматическая отправка', {
-            'fields': ['series_day', 'series_time', ]
-        }]]
+    'fields': ['series_day', 'series_time', ]
+}]]
 
 
 class EmailMessageForm(forms.ModelForm):
+
     def __init__(self, *args, **kwargs):
         super(EmailMessageForm, self).__init__(*args, **kwargs)
         if not self.instance.unisender_id:
@@ -255,6 +283,7 @@ class AttachmentInline(admin.TabularInline):
     model = Attachment
     extra = 0
 
+
 class AttachmentInlineReadOnly(AttachmentInline):
     can_delete = False
 
@@ -263,11 +292,12 @@ class AttachmentInlineReadOnly(AttachmentInline):
 
     def get_readonly_fields(self, request, obj=None):
         result = list(set(
-                [field.name for field in self.opts.local_fields] +
-                [field.name for field in self.opts.local_many_to_many]
-            ))
+            [field.name for field in self.opts.local_fields] +
+            [field.name for field in self.opts.local_many_to_many]
+        ))
         result.remove('id')
         return result
+
 
 class EmailMessageAdmin(UnisenderAdmin):
     fieldsets = unisender_fieldsets + [
@@ -297,14 +327,15 @@ class EmailMessageAdmin(UnisenderAdmin):
         return super(EmailMessageAdmin, self).get_readonly_fields(request, obj=None)
 
     def get_fieldsets(self, request, obj=None):
-        field_sets = super(EmailMessageAdmin, self).get_fieldsets(request, obj=None)
+        field_sets = super(
+            EmailMessageAdmin, self).get_fieldsets(request, obj=None)
         if obj and obj.unisender_id:
             field_sets = unisender_fieldsets + [
-            [u'Сообщение', {
-                'fields': ['sender_name', 'sender_email', 'subject',
-                           'read_only_body', 'list_id', 'lang', 'text_body',
-                           'generate_text', 'wrap_type', 'categories', 'tag']
-            }]] + auto_send_fieldset
+                [u'Сообщение', {
+                 'fields': ['sender_name', 'sender_email', 'subject',
+                            'read_only_body', 'list_id', 'lang', 'text_body',
+                            'generate_text', 'wrap_type', 'categories', 'tag']
+                 }]] + auto_send_fieldset
         return field_sets
 
     def response_add(self, request, obj):
@@ -355,7 +386,7 @@ class EmailMessageAdmin(UnisenderAdmin):
         extra_context = extra_context or {}
         extra_context['unisender_site'] = EMAIL_MESSAGES_LIST
         return super(EmailMessageAdmin, self).changelist_view(request,
-            extra_context=extra_context)
+                                                              extra_context=extra_context)
 
 admin.site.register(EmailMessage, EmailMessageAdmin)
 
@@ -394,11 +425,12 @@ class CampaignVisitedLinksInline(admin.TabularInline):
 
     def get_readonly_fields(self, request, obj=None):
         result = list(set(
-                [field.name for field in self.opts.local_fields] +
-                [field.name for field in self.opts.local_many_to_many]
-            ))
+            [field.name for field in self.opts.local_fields] +
+            [field.name for field in self.opts.local_many_to_many]
+        ))
         result.remove('id')
         return result
+
 
 class CampaignAdmin(UnisenderAdmin):
     change_form_template = 'unisender/admin/change_campaign.html'
@@ -425,7 +457,8 @@ class CampaignAdmin(UnisenderAdmin):
                 [field.name for field in self.opts.local_fields] +
                 [field.name for field in self.opts.local_many_to_many]
             ))
-            result += ['get_last_error', 'get_error_count', 'get_success_count']
+            result += [
+                'get_last_error', 'get_error_count', 'get_success_count']
             return result
         return super(CampaignAdmin, self).get_readonly_fields(request, obj=None)
 
@@ -466,31 +499,30 @@ class CampaignAdmin(UnisenderAdmin):
             extra_context['show_get_statistic_button'] = True
             extra_context['pk'] = object_id
         return super(CampaignAdmin, self).change_view(request, object_id,
-            form_url, extra_context=extra_context)
-
+                                                      form_url, extra_context=extra_context)
 
     def get_urls(self):
         urls = super(CampaignAdmin, self).get_urls()
         my_urls = patterns('',
-            url(r'(?P<pk>\d+)/get_statistic/$',
-             self.admin_site.admin_view(GetCampaignStatistic.as_view()),
-             name='unisender_campaign_get_statistic',
-             ),
-            url(r'get_campaigns/$',
-             self.admin_site.admin_view(GetCampaigns.as_view()),
-             name='unisender_get_campaigns',
-             ),
+                           url(r'(?P<pk>\d+)/get_statistic/$',
+                               self.admin_site.admin_view(
+                               GetCampaignStatistic.as_view()),
+                               name='unisender_campaign_get_statistic',
+                               ),
+                           url(r'get_campaigns/$',
+                               self.admin_site.admin_view(
+                                   GetCampaigns.as_view()),
+                               name='unisender_get_campaigns',
+                               ),
 
-        )
+                           )
         return my_urls + urls
-
 
     def save_model(self, request, obj, form, change):
         obj.save()
         if not obj.unisender_id:
             obj.unisender_id = obj.create_campaign(request)
         obj.save()
-
 
     actions = ['delete_selected_campaigns']
 
@@ -513,6 +545,6 @@ class CampaignAdmin(UnisenderAdmin):
         extra_context = extra_context or {}
         extra_context['unisender_site'] = CAMPAIGN_LIST
         return super(CampaignAdmin, self).changelist_view(request,
-            extra_context=extra_context)
+                                                          extra_context=extra_context)
 
 admin.site.register(Campaign, CampaignAdmin)

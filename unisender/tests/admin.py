@@ -10,11 +10,11 @@ from django.contrib.messages.storage.fallback import FallbackStorage
 from mock import Mock, patch
 
 from unisender.models import (
-    Tag, Field, SubscribeList, Subscriber, EmailMessage, Campaign)
+    Tag, Field, SubscribeList, Subscriber, EmailMessage, Campaign, OptinEmail)
 
 from unisender.admin import (
     FieldAdmin, SubscribeListAdmin, SubscriberAdmin, EmailMessageAdmin,
-    CampaignAdmin, AttachmentInline, AttachmentInlineReadOnly
+    CampaignAdmin, AttachmentInline, AttachmentInlineReadOnly, OptinEmailInline
 )
 
 from unisender.unisender_urls import (
@@ -230,6 +230,27 @@ class FieldAdminTestCase(TestCase):
         self.assertEqual(field.delete_field.call_count, 1)
 
 
+class OptinEmailInlineAdminTestCase(TestCase):
+
+    def setUp(self):
+        site = AdminSite()
+        self.admin = OptinEmailInline(SubscribeList, site)
+        self.request = RequestFactory().get(reverse('admin:index'))
+
+    def test_save_model(self):
+        start_unisender_count = SubscribeList.objects.count()
+        subscribe_list = SubscribeList.objects.create(
+            title='test', unisender_id=1)
+        optin_email = OptinEmail.objects.create(
+            list_id=subscribe_list, sender_name='test',
+            sender_email='test@example.com', subject='test')
+        optin_email.update_optin_email = Mock(return_value=None)
+        self.admin.save_model(self.request, optin_email, None, None)
+        self.assertEqual(
+            SubscribeList.objects.count(), start_unisender_count + 1)
+        self.assertTrue(optin_email.update_optin_email.called)
+        self.assertEqual(optin_email.update_optin_email.call_count, 1)
+
 class SubscribeListAdminTestCase(TestCase):
 
     def setUp(self):
@@ -285,8 +306,17 @@ class SubscribeListAdminTestCase(TestCase):
         csrf = get_csrf_token(response)
         post_data = {'title': u'test_subscribe_list',
                      'csrfmiddlewaretoken': csrf,
+                     'optinemail-TOTAL_FORMS': 1,
+                     'optinemail-INITIAL_FORMS': 0,
+                     'optinemail-MAX_NUM_FORMS': 1,
+                     'optinemail-0-sender_name': 'test_name',
+                     'optinemail-0-sender_email': 'test@example.com',
+                     'optinemail-0-subject': 'test',
+                     'optinemail-0-body': 'test',
+                     'optinemail-0-list_id': subscribe_list.pk,
                      }
         response = self.client.post(url, post_data)
+        # print '\n%s\n' % response
         self.assertRedirects(
             response, reverse('admin:unisender_subscribelist_changelist'))
         self.assertTrue(SubscribeList.objects.filter(

@@ -308,6 +308,58 @@ class SubscribeList(UnisenderModel):
         verbose_name_plural = _(u'Списки рассылки')
 
 
+class OptinEmail(UnisenderModel):
+    sender_name = models.CharField(
+        _(u'Имя отправителя'), max_length=255, help_text=_(
+            u'Произвольная строка, не совпадающая с e-mail адресом'))
+    sender_email = models.CharField(
+        _(u'E-mail адрес отправителя.'), max_length=255, help_text=_(
+            u'''Этот e-mail должен быть проверен (для этого надо создать вручную
+                хотя бы одно письмо с этим обратным адресом через веб-интерфейс,
+                затем нажать на ссылку "отправьте запрос подтверждения"
+                и перейти по ссылке из письма).'''))
+    subject = models.CharField(_(u'Тема письма'), max_length=255)
+    body = TinyMCEModelField(
+        _(u'Текст письма в формате HTML'), help_text=_(
+            u'''Текст обязательно должен включать в себя как минимум одну ссылку
+                с атрибутом href="{{ConfirmUrl}}"'''), default=_(
+                u'<a href="{{ConfirmUrl}}">Подписаться на рассылку</a>'))
+    list_id = models.OneToOneField(SubscribeList)
+
+    def update_optin_email(self, request=None):
+        '''
+        создает список
+        http://www.unisender.com/ru/help/api/updateOptInEmail/
+        '''
+        api = self.get_api()
+        responce = api.updateOptInEmail(
+            sender_name=self.sender_name.encode('utf-8'),
+            sender_email=self.sender_email.encode('utf-8'),
+            subject=self.subject.encode('utf-8'),
+            body=self.body.encode('utf-8'), list_id=self.list_id.unisender_id)
+        print '\n%s\n' % responce
+        result = responce.get('result')
+        error = responce.get('error')
+        warning = responce.get('warning')
+        if warning:
+            self.log_warning(warning, request)
+        if result == {}:
+            self.sync = True
+            self.last_error = None
+            self.success_message(_(u'Сообщение успешно синхронизировано'),
+                request=request)
+            return
+        if error:
+            self.last_error = error
+            self.log_error(request)
+
+    def __unicode__(self):
+        return unicode(self.list_id.title)
+
+    class Meta:
+        verbose_name = _(u'Письмо приглашение для рассылки')
+        verbose_name_plural = _(u'Письмо приглашение для рассылки')
+
 class Subscriber(UnisenderModel):
     CONTACT_TYPE = [
         ('email', _(u'email')),
