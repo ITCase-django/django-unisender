@@ -203,8 +203,8 @@ class SubscribeListAdmin(UnisenderAdmin):
         super(type(self), self).save_related(request, form, formsets, change)
         if change:
             instance = formsets[0].queryset[0]
-        instance.update_optin_email(request)
-        instance.save()
+            instance.update_optin_email(request)
+            instance.save()
 
 admin.site.register(SubscribeList, SubscribeListAdmin)
 
