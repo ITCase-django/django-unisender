@@ -48,7 +48,6 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Framework :: Django',
         'Topic :: Internet',
-        'Topic :: Email',
         'License :: Repoze Public License',
     ],
 )
