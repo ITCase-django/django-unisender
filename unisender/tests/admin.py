@@ -10,11 +10,11 @@ from django.contrib.messages.storage.fallback import FallbackStorage
 from mock import Mock, patch
 
 from unisender.models import (
-    Tag, Field, SubscribeList, Subscriber, EmailMessage, Campaign, OptinEmail)
+    Tag, Field, SubscribeList, Subscriber, EmailMessage, Campaign)
 
 from unisender.admin import (
     FieldAdmin, SubscribeListAdmin, SubscriberAdmin, EmailMessageAdmin,
-    CampaignAdmin, AttachmentInline, AttachmentInlineReadOnly, OptinEmailInline
+    CampaignAdmin, AttachmentInline, AttachmentInlineReadOnly
 )
 
 from unisender.unisender_urls import (
@@ -229,27 +229,6 @@ class FieldAdminTestCase(TestCase):
         self.assertTrue(field.delete_field.called)
         self.assertEqual(field.delete_field.call_count, 1)
 
-
-class OptinEmailInlineAdminTestCase(TestCase):
-
-    def setUp(self):
-        site = AdminSite()
-        self.admin = OptinEmailInline(SubscribeList, site)
-        self.request = RequestFactory().get(reverse('admin:index'))
-
-    def test_save_model(self):
-        start_unisender_count = SubscribeList.objects.count()
-        subscribe_list = SubscribeList.objects.create(
-            title='test', unisender_id=1)
-        optin_email = OptinEmail.objects.create(
-            list_id=subscribe_list, sender_name='test',
-            sender_email='test@example.com', subject='test')
-        optin_email.update_optin_email = Mock(return_value=None)
-        self.admin.save_model(self.request, optin_email, None, None)
-        self.assertEqual(
-            SubscribeList.objects.count(), start_unisender_count + 1)
-        self.assertTrue(optin_email.update_optin_email.called)
-        self.assertEqual(optin_email.update_optin_email.call_count, 1)
 
 class SubscribeListAdminTestCase(TestCase):
 

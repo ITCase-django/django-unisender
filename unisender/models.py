@@ -337,7 +337,6 @@ class OptinEmail(UnisenderModel):
             sender_email=self.sender_email.encode('utf-8'),
             subject=self.subject.encode('utf-8'),
             body=self.body.encode('utf-8'), list_id=self.list_id.unisender_id)
-        print '\n%s\n' % responce
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')
