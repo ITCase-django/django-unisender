@@ -437,9 +437,17 @@ class CampaignAdmin(UnisenderAdmin):
     fieldsets = unisender_fieldsets + [
         (u'Рассылка', {
             'fields': ['name', 'email_message', 'start_time',
-                       'track_read', 'track_links', 'contacts', 'track_ga',
+                       'track_read', 'track_links', 'track_ga',
                        'payment_limit', ]
-        })]
+        },),
+        (u'Контакты', {
+            'fields': ['contacts',],
+            'description': '''Если этот аргумент отсутствует, то отправка будет
+                     осуществлена по всем контактам списка, для которого
+                     составлено сообщение. В противном случае во внимание будут приняты
+                     только те контакты, которые
+                     входят в список, а остальные будут проигнорированы. '''
+        },)]
 
     list_display = (
         '__unicode__', 'email_message', 'unisender_id', 'sync')

@@ -733,12 +733,6 @@ class Campaign(UnisenderModel):
         default=TEXT_GENERATE[0][0])
     contacts = models.ManyToManyField(
         Subscriber, related_name='campaign', verbose_name=u'Контакты',
-        help_text='''Если этот аргумент отсутствует, то отправка будет
-                     осуществлена по всем контактам списка, для которого
-                     составлено сообщение (возможно, с учётом сегментации
-                     по меткам). Если аргумент contacts присутствует,
-                     то во внимание будут приняты только те контакты, которые
-                     входят в список, а остальные будут проигнорированы. ''',
         blank=True, null=True)
     track_ga = models.CharField(
         _(u'включить интеграцию с Google Analytics/Яндекс.Метрика. '),
