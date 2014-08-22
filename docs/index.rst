@@ -1,7 +1,7 @@
-$project
+django-unisender
 ========
 
-$project интеграция django_ с сервисом рассылок unisender_
+django-unisender интеграция django_ с сервисом рассылок unisender_
 
 
 Возможности
@@ -21,7 +21,7 @@ $project интеграция django_ с сервисом рассылок unise
 
 Установка проекта производится следующей командой:
 
-    pip install $project
+    pip install django-unisender
 
 Contribute
 ----------
