@@ -32,7 +32,7 @@ setup(
         'django-tinymce-4'
     ],
     dependency_links=[
-        'http://github.com/ITCase/django-tinymce-4/tarball/master',
+        'http://github.com/ITCase/django-tinymce-4/tarball/master#egg=master',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
