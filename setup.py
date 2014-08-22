@@ -27,9 +27,11 @@ setup(
         'django',
         'django-filebrowser',
         'pillow',
-        # 'git+git://github.com/ITCase/django-tinymce-4',
         'mock',
         'dateutils'
+    ],
+    dependency_links=[
+        'http://github.com/ITCase/repo/django-tinymce-4/master'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
