@@ -71,6 +71,8 @@ class UnisenderModel(models.Model):
     def success_message(self, message, request=None):
         if request:
             messages.success(request, message)
+        if UNISENDER_TEST_MODE:
+            messages.warning(request, _(u'Внимание включен тестовый режим и никаких изменений в БД unisender не было внесено'))
 
     def log_error(self, request=None, error=None):
         last_error = error if error else self.get_last_error()
