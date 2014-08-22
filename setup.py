@@ -29,6 +29,7 @@ setup(
         'pillow',
         'mock',
         'dateutils',
+        'django-tinymce-4'
     ],
     dependency_links=[
         'http://github.com/ITCase/django-tinymce-4/tarball/master#egg=master',
