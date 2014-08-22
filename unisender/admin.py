@@ -201,7 +201,7 @@ class SubscribeListAdmin(UnisenderAdmin):
 
     def save_related(self, request, form, formsets, change):
         super(type(self), self).save_related(request, form, formsets, change)
-        if change:
+        if change and formsets[0].queryset:
             instance = formsets[0].queryset[0]
             instance.update_optin_email(request)
             instance.save()
