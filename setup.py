@@ -27,9 +27,11 @@ setup(
         'django',
         'django-filebrowser',
         'pillow',
-        # 'git+git://github.com/ITCase/django-tinymce-4',
         'mock',
         'dateutils'
+    ],
+    dependency_links=[
+        'http://github.com/ITCase/django-tinymce-4/tarball/master',
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
@@ -48,7 +50,6 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Framework :: Django',
         'Topic :: Internet',
-        'Topic :: Email',
         'License :: Repoze Public License',
     ],
 )
