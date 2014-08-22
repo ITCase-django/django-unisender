@@ -31,7 +31,7 @@ setup(
         'dateutils'
     ],
     dependency_links=[
-        'http://github.com/ITCase/repo/django-tinymce-4/master'
+        'http://github.com/ITCase/django-tinymce-4/tarball/master'
     ],
     classifiers=[
         'Development Status :: 3 - Alpha',
