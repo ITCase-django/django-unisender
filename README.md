@@ -17,6 +17,9 @@ django-unisender
   * Создание рассылок
   * Просмотр статистики о рассылке
 
+
+## [Документация](http://django-unisender.readthedocs.org/ru/latest/)
+
 ## Установка
 
 ```
@@ -65,7 +68,6 @@ UNISENDER_API_KEY = 'your_key'
 ### Планируется реализовать
 * Создание и отправка sms
 * Отправка одиночного email сообщения без создания рассылки
-* Документация
 * [Полный список issue](https://github.com/ITCase/django-unisender/issues?state=open)
 
 ### Невозможно реализовать в силу отсутствия методов API

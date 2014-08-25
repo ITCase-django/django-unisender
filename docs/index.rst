@@ -3,6 +3,13 @@ django-unisender
 
 django-unisender интеграция django_ с сервисом рассылок unisender_
 
+Содержание
+--------
+
+.. toctree::
+   :maxdepth: 2
+
+   quickstart
 
 Возможности
 --------
