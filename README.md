@@ -23,7 +23,7 @@ django-unisender
 ## Установка
 
 ```
-pip install git+https://github.com/ITCase/django-unisender.git
+pip install django-unisender
 ```
 
 Добавить unisender в INSTALLED_APPS
