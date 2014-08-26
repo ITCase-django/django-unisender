@@ -731,6 +731,7 @@ class CampaignAdminTestCase(TestCase):
             list_id=subscribe_list, sync=True
         )
         self.request.user = self.user
+        self.maxDiff = None
 
     def test_open_unisender_page(self):
         """Открываем страницу рассылки в админке"""
@@ -877,10 +878,18 @@ class CampaignAdminTestCase(TestCase):
              'fields': ['unisender_id', 'sync', 'get_last_error']
              }],
             (u'Рассылка', {
-                'fields': ['name', 'email_message', 'start_time',
-                           'track_read', 'track_links', 'contacts', 'track_ga',
-                           'payment_limit', ]
-            })]
+            'fields': ['name', 'email_message', 'start_time',
+                       'track_read', 'track_links', 'track_ga',
+                       'payment_limit', ]
+            },),
+            (u'Контакты', {
+                'fields': ['contacts',],
+                'description': '''Если этот аргумент отсутствует, то отправка будет
+                     осуществлена по всем контактам списка, для которого
+                     составлено сообщение. В противном случае во внимание будут приняты
+                     только те контакты, которые
+                     входят в список, а остальные будут проигнорированы. '''
+            },)]
         self.assertItemsEqual(
             fieldsets_initial,
             self.admin.get_fieldsets(self.request))
