@@ -382,31 +382,25 @@ class Subscriber(UnisenderModel):
                                     default=CONTACT_TYPE[0][0])
     contact = models.CharField(_(u'email/телефон'), max_length=255)
     double_optin = models.CharField(
-        _(u'Число от 0 до 3 - есть ли подтверждённое согласие подписчика'),
-        help_text='''Если 0, то мы считаем, что подписчик только высказал
+        _(u'Есть ли подтверждённое согласие подписчика'),
+        help_text='''<h2>Если выбрано 0</h2>
+                     <div>Подписчик высказал
                      желание подписаться, но ещё не подтвердил подписку.
                      В этом случае подписчику будет отправлено
-                     письмо-приглашение подписаться. Текст письма будет взят из
-                     свойств первого списка из list_ids. Кстати, текст можно
-                     поменять с помощью метода updateOptInEmail или через
-                     веб-интерфейс.
-
-                    Если 1, то мы считаем, что у Вас уже есть согласие
+                     письмо-приглашение подписаться.</div>
+                     <h2>Если выбрано 1</h2>
+                     <div>У Вас уже есть согласие
                     подписчика. Но при этом для защиты от злоупотреблений есть
-                    суточный лимит подписок. Если он не превышен, мы не посылаем
-                    письмо-приглашение. Если же он превышен, подписчику
-                    высылается письмо с просьбой подтвердить подписку. Текст
-                    этого письма можно настроить для каждого списка с помощью
-                    метода updateOptInEmail или через веб-интерфейс.
-                    Лимиты мы согласовываем в индивидуальном порядке.
-
-                    Если 2, то также считается, что у Вас согласие подписчика
+                    суточный лимит подписок. Если же он превышен, подписчику
+                    высылается письмо с просьбой подтвердить подписку.</div>
+                    <h2>Если выбрано 2</h2>
+                    <div>Считается, что у Вас согласие подписчика
                     уже есть, но в случае превышения лимита мы возвращаем код
-                    ошибки too_many_double_optins.
-
-                    Если 3, то также считается, что у Вас согласие подписчика
+                    ошибки too_many_double_optins.</div>
+                    <h2>Если выбрано 3</h2>
+                    <div>Считается, что у Вас согласие подписчика
                     уже есть, но в случае превышения лимита подписчик
-                    добавляется со статусом «новый». ''',
+                    добавляется со статусом «новый».</div> ''',
                     choices=DOUBLE_OPTIN_CHOICES, default=DOUBLE_OPTIN_CHOICES[1][0], max_length=2)
 
     def serialize_fields(self):
@@ -722,7 +716,8 @@ class Campaign(UnisenderModel):
     email_message = models.ForeignKey(
         EmailMessage, verbose_name=u'Сообщение', null=True)
     start_time = models.DateTimeField(
-        _(u'Дата и время запуска рассылки'), blank=True, null=True)
+        _(u'Дата и время запуска рассылки'), blank=True, null=True,
+        help_text=_(u'Если не указано, то рассылка будет осуществлена немедленно'))
     track_read = models.CharField(
         _(u'отслеживать ли факт прочтения e-mail сообщения'),
         max_length=50,  choices=TEXT_GENERATE, default=TEXT_GENERATE[0][0])
@@ -733,12 +728,6 @@ class Campaign(UnisenderModel):
         default=TEXT_GENERATE[0][0])
     contacts = models.ManyToManyField(
         Subscriber, related_name='campaign', verbose_name=u'Контакты',
-        help_text='''Если этот аргумент отсутствует, то отправка будет
-                     осуществлена по всем контактам списка, для которого
-                     составлено сообщение (возможно, с учётом сегментации
-                     по меткам). Если аргумент contacts присутствует,
-                     то во внимание будут приняты только те контакты, которые
-                     входят в список, а остальные будут проигнорированы. ''',
         blank=True, null=True)
     track_ga = models.CharField(
         _(u'включить интеграцию с Google Analytics/Яндекс.Метрика. '),
@@ -840,6 +829,13 @@ class Campaign(UnisenderModel):
         default=0)
 
     unisender = UnisenderCampaignManager()
+
+    def was_send(self):
+        if self.status =='completed':
+            return True
+        return False
+    was_send.short_description = u'Рассылка завершена'
+    was_send.boolean = True
 
 
     def get_error_count(self):
