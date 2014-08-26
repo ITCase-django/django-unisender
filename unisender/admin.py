@@ -450,7 +450,8 @@ class CampaignAdmin(UnisenderAdmin):
         },)]
 
     list_display = (
-        '__unicode__', 'email_message', 'unisender_id', 'sync')
+        '__unicode__', 'email_message', 'unisender_id', 'sync', 'was_send',
+        'status')
     list_display_links = ('__unicode__',  'email_message', 'unisender_id')
     search_fields = ['name', 'contacts', ]
     filter_horizontal = ['contacts']

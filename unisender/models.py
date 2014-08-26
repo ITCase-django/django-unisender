@@ -830,6 +830,13 @@ class Campaign(UnisenderModel):
 
     unisender = UnisenderCampaignManager()
 
+    def was_send(self):
+        if self.status =='completed':
+            return True
+        return False
+    was_send.short_description = u'Рассылка завершена'
+    was_send.boolean = True
+
 
     def get_error_count(self):
         result = 0
