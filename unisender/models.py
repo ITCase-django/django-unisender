@@ -716,7 +716,8 @@ class Campaign(UnisenderModel):
     email_message = models.ForeignKey(
         EmailMessage, verbose_name=u'Сообщение', null=True)
     start_time = models.DateTimeField(
-        _(u'Дата и время запуска рассылки'), blank=True, null=True)
+        _(u'Дата и время запуска рассылки'), blank=True, null=True,
+        help_text=_(u'Если не указано, то рассылка будет осуществлена немедленно'))
     track_read = models.CharField(
         _(u'отслеживать ли факт прочтения e-mail сообщения'),
         max_length=50,  choices=TEXT_GENERATE, default=TEXT_GENERATE[0][0])
