@@ -3,7 +3,7 @@ from django.test import TestCase
 
 from mock import patch
 
-from unisender.models import Tag, Field, SubscribeList, Campaign
+from unisender.models import Tag, Field, SubscribeList, Campaign, Subscriber
 
 
 class TagManagerTestCase(TestCase):
@@ -159,3 +159,46 @@ class CampaignManagerTestCase(TestCase):
     def test__get_campaings_time_filter(self):
         # TODO
         pass
+
+class SubscriberManagerTestCase(TestCase):
+
+    list_export_contacts ={
+      'result':{
+        'field_names':['email', u'Имя', u'email_status', u'email_availability',
+                       'email_subscribed_lists', 'email_subscribed_times',
+                       'email_add_time'],
+        'data':[['test1@example.org', u'Вася', 'active', 'available',
+                 '123,127', '2010-06-15 12:54:07,2010-06-15 12:54:07',
+                 '2010-06-15 12:34:01'],
+                ['test2@example.org', u'Петя', 'invited', 'unreachable',
+                 '123', '2010-03-15 18:12:55', '2010-03-15 18:12:55'],
+                ['test3@example.org', u'Коля', 'active', 'avaialable',
+                 '', '', '2010-03-15 18:12:55']]
+        }
+    }
+
+    def setUp(self):
+        self.manager = Subscriber.unisender
+        with patch('unisender.managers.UnisenderManager.api') as mock:
+            self.manager.api = mock.return_value
+            self.manager.api.exportContacts.return_value = self.list_export_contacts
+
+    def test__export_contacts(self):
+        # simple test
+        contacts = self.manager.export_contacts()
+        self.assertEquals(self.list_export_contacts, contacts)
+
+    def test__update_subsribers(self):
+        subscribe_list_1 = SubscribeList.objects.create(title='test 1', sync=True,
+                                                      unisender_id=123)
+        subscribe_list_2 = SubscribeList.objects.create(title='test 2', sync=True,
+                                                      unisender_id=124)
+        subscriber_1 = Subscriber.objects.create(contact='test1@example.org')
+        subscriber_1.list_ids.add(subscribe_list_2)
+        self.manager.update_subsribers()
+        subscriber_1 = Subscriber.objects.get(contact='test1@example.org')
+        self.assertEquals(subscriber_1.list_ids.all(), [subscribe_list_1])
+        subscriber_2 = Subscriber.objects.get(contact='test2@example.org')
+        self.assertEquals(subscriber_2.list_ids.all(), [subscribe_list_1])
+        subscriber_3 = Subscriber.objects.get(contact='test3@example.org')
+        self.assertEquals(subscriber_3.list_ids.all(), [])

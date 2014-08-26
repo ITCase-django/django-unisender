@@ -28,7 +28,7 @@ from settings import UNISENDER_API_KEY, UNISENDER_TEST_MODE
 
 from unisender.managers import (
     UnisenderTagManager, UnisenderFieldManager, UnisenderListManager,
-    UnisenderCampaignManager)
+    UnisenderCampaignManager, UnisenderSubscriberManager)
 
 test_mode = 1 if UNISENDER_TEST_MODE else 0
 
@@ -403,6 +403,8 @@ class Subscriber(UnisenderModel):
                     добавляется со статусом «новый».</div> ''',
                     choices=DOUBLE_OPTIN_CHOICES, default=DOUBLE_OPTIN_CHOICES[1][0], max_length=2)
 
+    unisender = UnisenderSubscriberManager()
+
     def serialize_fields(self):
         result = {}
         if self.contact_type == 'email':
@@ -714,7 +716,8 @@ class Campaign(UnisenderModel):
     name = models.CharField(
         _(u'Название рассылки'), max_length=255, blank=True, null=True)
     email_message = models.ForeignKey(
-        EmailMessage, verbose_name=u'Сообщение', null=True)
+        EmailMessage, verbose_name=u'Сообщение', null=True,
+        help_text=_(u'Одно и то же сообщение можно отправлять несколько раз, но моменты отправки не должны быть ближе, чем на час друг к другу.'))
     start_time = models.DateTimeField(
         _(u'Дата и время запуска рассылки'), blank=True, null=True,
         help_text=_(u'Если не указано, то рассылка будет осуществлена немедленно'))
@@ -977,7 +980,10 @@ class Campaign(UnisenderModel):
             params['payment_limit'] = self.payment_limit
 
         api = self.get_api()
-        responce = api.createCampaign(**params)
+        try:
+            responce = api.createCampaign(**params)
+        except ValueError:
+            responce = {'error': u'Неизвестная ошибка unisender'}
         result = responce.get('result')
         error = responce.get('error')
         warning = responce.get('warning')

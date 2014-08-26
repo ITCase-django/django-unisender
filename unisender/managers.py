@@ -26,6 +26,8 @@ class UnisenderManager(models.Manager):
     def success_message(self, message, request=None):
         if request:
             messages.success(request, message)
+        if UNISENDER_TEST_MODE:
+            messages.warning(request, _(u'Внимание включен тестовый режим и никаких изменений в БД unisender не было внесено'))
 
     def log_error(self, error, request=None):
         if request:
@@ -165,6 +167,59 @@ class UnisenderCampaignManager(UnisenderManager):
             request=request)
         if error:
             error_msg = UNISENDER_COMMON_ERRORS.get(campaigns.get('code'), error)
+            self.log_error(error_msg, request)
+        if warning:
+            self.log_warning(warning, request)
+
+
+class UnisenderSubscriberManager(UnisenderManager):
+
+    def export_contacts(self):
+        '''
+        Возвращает результат выполнения команды exportContacts:
+        http://www.unisender.com/ru/help/api/exportContacts/
+        '''
+        return self.api.exportContacts()
+
+
+    def update_subsribers(self, request=None):
+        '''
+        Выполняет команду exportContacts и обновляет значения в БД:
+        http://www.unisender.com/ru/help/api/exportContacts/
+        '''
+        subscribers = self.export_contacts()
+        result = subscribers.get('result', [])
+        error = subscribers.get('error')
+        warning = subscribers.get('warning')
+        SubscribeList = []
+        print '\n%s\n' % [(f.name, f.related.parent_model) for f in self.model._meta.many_to_many]
+        if result:
+            field_names = result['field_names']
+            data = result['data']
+            for item in data:
+                subscriber_dict = dict(zip(field_names, item))
+                subscriber, create = self.model.objects.get_or_create(
+                    contact=subscriber_dict['email'], contact_type='email',
+                    sync=True)
+                if not create:
+                    subscriber.list_ids.clear()
+                for subscribe_list in item['email_subscribed_lists']:
+                    try:
+                        subscriber.list_ids.add(SubscribeList.objects.get(
+                            unisender_id=int(subscribe_list)))
+                    except SubscribeList.DoesNotExists:
+                        continue
+
+        # for item in result:
+        #     tag, created = self.model.objects.get_or_create(
+        #         unisender_id=int(item['id']))
+        #     tag.sync = True
+        #     tag.save()
+        # self.success_message(
+        #     _(u'%s рассылок получено от unisender') % len(result),
+        #     request=request)
+        if error:
+            error_msg = UNISENDER_COMMON_ERRORS.get(subscribers.get('code'), error)
             self.log_error(error_msg, request)
         if warning:
             self.log_warning(warning, request)
