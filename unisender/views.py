@@ -31,7 +31,7 @@ class GetTags(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         Tag.unisender.get_and_update_tags(self.request)
-        return super(GetTags, self).get_redirect_url(*args, **kwargs)
+        return reverse_lazy(self.pattern_name)
 
 
 class GetFields(RedirectView):
@@ -40,7 +40,7 @@ class GetFields(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         Field.unisender.get_and_update_fields(self.request)
-        return super(GetFields, self).get_redirect_url(*args, **kwargs)
+        return reverse_lazy(self.pattern_name)
 
 
 class GetLists(RedirectView):
@@ -49,7 +49,7 @@ class GetLists(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         SubscribeList.unisender.get_and_update_lists(self.request)
-        return super(GetLists, self).get_redirect_url(*args, **kwargs)
+        return reverse_lazy(self.pattern_name)
 
 
 class GetCampaigns(RedirectView):
@@ -58,4 +58,4 @@ class GetCampaigns(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
         Campaign.unisender.get_and_update_campaigns(request=self.request)
-        return super(GetCampaigns, self).get_redirect_url(*args, **kwargs)
+        return reverse_lazy(self.pattern_name)

@@ -71,8 +71,8 @@ class UnisenderModel(models.Model):
     def success_message(self, message, request=None):
         if request:
             messages.success(request, message)
-        if UNISENDER_TEST_MODE:
-            messages.warning(request, _(u'Внимание включен тестовый режим и никаких изменений в БД unisender не было внесено'))
+            if UNISENDER_TEST_MODE:
+                messages.warning(request, _(u'Внимание включен тестовый режим и никаких изменений в БД unisender не было внесено'))
 
     def log_error(self, request=None, error=None):
         last_error = error if error else self.get_last_error()
@@ -301,6 +301,14 @@ class SubscribeList(UnisenderModel):
             self.last_error = error
             self.log_error(request)
 
+    def save_and_sync(self, request=None):
+        if self.unisender_id:
+            if self.pk:
+                self.update_list(request)
+        else:
+            self.unisender_id = self.create_list(request)
+        self.save()
+
     def __unicode__(self):
         return unicode(self.title)
 
@@ -447,6 +455,12 @@ class Subscriber(UnisenderModel):
         if error:
            self.last_error = error
            self.log_error(request)
+
+    def save_and_sync(self, request=None):
+        self.save()
+        if not self.unisender_id:
+            self.unisender_id = self.subscribe(request)
+        self.save()
 
     def unsubscribe(self, request=None):
         '''

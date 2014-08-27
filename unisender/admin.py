@@ -155,12 +155,7 @@ class SubscribeListAdmin(UnisenderAdmin):
         return my_urls + urls
 
     def save_model(self, request, obj, form, change):
-        if obj.unisender_id:
-            if obj.pk:
-                obj.update_list(request)
-        else:
-            obj.unisender_id = obj.create_list(request)
-        obj.save()
+        obj.save_and_sync(request)
 
     actions = ['delete_selected_subscribe_list']
 
@@ -243,10 +238,7 @@ class SubscriberAdmin(UnisenderAdmin):
         return readonly_fields
 
     def save_model(self, request, obj, form, change):
-        obj.save()
-        if not obj.unisender_id:
-            obj.unisender_id = obj.subscribe(request)
-        obj.save()
+        obj.save_and_sync(request)
 
     actions = ['delete_selected_subscribers']
 
