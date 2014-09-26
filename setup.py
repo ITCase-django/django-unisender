@@ -1,6 +1,6 @@
 import os
-from unisender import __version__
 from setuptools import setup
+from unisender import __version__
 
 README = open(os.path.join(os.path.dirname(__file__), 'README.md')).read()
 os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
